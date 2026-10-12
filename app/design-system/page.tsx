@@ -16,14 +16,44 @@ import {
 export const metadata: Metadata = { title: "Design system · web-app" };
 
 const swatches = [
-  { name: "cream-100", hex: "#F7F5F2", className: "bg-cream-100" },
-  { name: "cream-50", hex: "#FAF9F5", className: "bg-cream-50" },
-  { name: "cream-200", hex: "#EFEBE4", className: "bg-cream-200" },
-  { name: "line", hex: "#E5E0D8", className: "bg-line" },
-  { name: "clay-500", hex: "#D97757", className: "bg-clay-500" },
-  { name: "clay-700", hex: "#A94A2B", className: "bg-clay-700" },
-  { name: "ink-muted", hex: "#6B665E", className: "bg-ink-muted" },
-  { name: "ink", hex: "#1A1A1A", className: "bg-ink" },
+  {
+    name: "cream-100",
+    hex: "#F7F5F2",
+    dark: "#1A1814",
+    className: "bg-cream-100",
+  },
+  {
+    name: "cream-50",
+    hex: "#FAF9F5",
+    dark: "#232019",
+    className: "bg-cream-50",
+  },
+  {
+    name: "cream-200",
+    hex: "#EFEBE4",
+    dark: "#2D2A23",
+    className: "bg-cream-200",
+  },
+  { name: "line", hex: "#E5E0D8", dark: "#38342C", className: "bg-line" },
+  {
+    name: "clay-500",
+    hex: "#D97757",
+    dark: "#D97757",
+    className: "bg-clay-500",
+  },
+  {
+    name: "clay-700",
+    hex: "#A94A2B",
+    dark: "#F2A98D",
+    className: "bg-clay-700",
+  },
+  {
+    name: "ink-muted",
+    hex: "#6B665E",
+    dark: "#A59E91",
+    className: "bg-ink-muted",
+  },
+  { name: "ink", hex: "#1A1A1A", dark: "#F3EFE8", className: "bg-ink" },
 ];
 
 function Section({
@@ -63,7 +93,7 @@ export default function DesignSystemPage() {
 
       <Section
         title="Color"
-        description="Warm neutrals for surfaces, one clay accent for the things that matter."
+        description="Warm neutrals for surfaces, one clay accent for the things that matter. Each swatch shows light / dark; use the toggle in the nav to switch."
       >
         <ul className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {swatches.map((s) => (
@@ -72,7 +102,9 @@ export default function DesignSystemPage() {
                 className={`border-line h-16 rounded-xl border ${s.className}`}
               />
               <p className="mt-2 text-sm font-medium">{s.name}</p>
-              <p className="text-ink-muted text-xs">{s.hex}</p>
+              <p className="text-ink-muted text-xs">
+                {s.hex} <span aria-hidden="true">/</span> {s.dark}
+              </p>
             </li>
           ))}
         </ul>

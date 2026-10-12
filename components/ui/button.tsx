@@ -11,9 +11,9 @@ export interface ButtonProps extends ComponentProps<"button"> {
 
 const variants: Record<ButtonVariant, string> = {
   primary:
-    "bg-clay-500 text-ink shadow-soft hover:bg-clay-600 hover:shadow-lift",
+    "bg-clay-500 text-on-clay shadow-soft hover:bg-clay-600 hover:shadow-lift",
   secondary:
-    "border border-line-strong bg-cream-50 text-ink shadow-soft hover:border-ink-muted/50 hover:bg-white",
+    "border border-line-strong bg-cream-50 text-ink shadow-soft hover:border-ink-muted/50 hover:bg-raised",
   ghost: "text-ink-soft hover:bg-cream-200 hover:text-ink",
 };
 

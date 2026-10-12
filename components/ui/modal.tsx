@@ -50,7 +50,7 @@ export function Modal({
       }}
       className={cn(
         "text-ink m-auto w-[calc(100%-2.5rem)] max-w-md bg-transparent p-0",
-        "backdrop:bg-ink/40 open:backdrop:animate-fade-in backdrop:backdrop-blur-[2px]",
+        "backdrop:bg-backdrop open:backdrop:animate-fade-in backdrop:backdrop-blur-[2px]",
         "open:animate-modal-in",
       )}
     >

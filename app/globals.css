@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* `dark:` follows the data-theme attribute (set before first paint, see layout). */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 /*
  * Design tokens.
  * Tailwind v4 has no tailwind.config file: the theme is declared here with
@@ -29,6 +32,15 @@
   --color-clay-500: #d97757;
   --color-clay-600: #cc6b4a;
   --color-clay-700: #a94a2b;
+
+  /* Raised surfaces (focused inputs, hovered secondary buttons) */
+  --color-raised: #ffffff;
+
+  /* Text on clay fills: stays dark in both themes for contrast */
+  --color-on-clay: #1a1a1a;
+
+  /* Modal scrim */
+  --color-backdrop: rgb(26 26 26 / 0.4);
 
   /* Feedback */
   --color-danger: #b3361f;
@@ -77,6 +89,45 @@
 
 :root {
   color-scheme: light;
+}
+
+/*
+ * Dark theme: warm charcoal, not blue-black. The same token names are
+ * remapped, so every component adapts without per-component dark: classes.
+ * Token names describe role (cream-50 = card surface), not literal color.
+ */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --color-cream-50: #232019;
+  --color-cream-100: #1a1814;
+  --color-cream-200: #2d2a23;
+  --color-cream-300: #38342c;
+
+  --color-ink: #f3efe8;
+  --color-ink-soft: #d6d0c4;
+  --color-ink-muted: #a59e91;
+
+  --color-line: #38342c;
+  --color-line-strong: #4d483e;
+
+  --color-clay-50: #2b1c14;
+  --color-clay-100: #3d2519;
+  --color-clay-400: #e58f72;
+  --color-clay-500: #d97757;
+  --color-clay-600: #e48a6a;
+  --color-clay-700: #f2a98d;
+
+  --color-raised: #2d2a23;
+  --color-backdrop: rgb(0 0 0 / 0.6);
+
+  --color-danger: #f08c76;
+  --color-success: #92c487;
+
+  --shadow-soft: 0 1px 2px rgb(0 0 0 / 0.3), 0 1px 1px rgb(0 0 0 / 0.2);
+  --shadow-lift: 0 6px 18px -2px rgb(0 0 0 / 0.45), 0 2px 4px rgb(0 0 0 / 0.25);
+  --shadow-overlay:
+    0 24px 60px -12px rgb(0 0 0 / 0.7), 0 8px 20px -8px rgb(0 0 0 / 0.4);
 }
 
 body {

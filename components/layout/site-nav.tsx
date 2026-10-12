@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/cn";
+import { ThemeToggle } from "./theme-toggle";
 
 const links = [
   { href: "/", label: "Home" },
@@ -44,6 +45,9 @@ export function SiteNav() {
               </li>
             );
           })}
+          <li className="ml-1">
+            <ThemeToggle />
+          </li>
         </ul>
       </nav>
     </header>
