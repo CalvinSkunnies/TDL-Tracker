@@ -11,6 +11,8 @@ export interface ModalProps {
   /** Action buttons, rendered right-aligned under the content. */
   footer?: ReactNode;
   children?: ReactNode;
+  /** md = confirmations, lg = forms. */
+  size?: "md" | "lg";
   className?: string;
 }
 
@@ -25,6 +27,7 @@ export function Modal({
   description,
   footer,
   children,
+  size = "md",
   className,
 }: ModalProps) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -49,7 +52,8 @@ export function Modal({
         if (event.target === event.currentTarget) onClose();
       }}
       className={cn(
-        "text-ink m-auto w-[calc(100%-2.5rem)] max-w-md bg-transparent p-0",
+        "text-ink m-auto w-[calc(100%-2.5rem)] bg-transparent p-0",
+        size === "lg" ? "max-w-xl" : "max-w-md",
         "backdrop:bg-backdrop open:backdrop:animate-fade-in backdrop:backdrop-blur-[2px]",
         "open:animate-modal-in",
       )}

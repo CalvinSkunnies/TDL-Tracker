@@ -16,5 +16,6 @@ export {
 export { Checkbox, type CheckboxProps } from "./checkbox";
 export { Input, type InputProps } from "./input";
 export { Modal, type ModalProps } from "./modal";
+export { Select, type SelectProps } from "./select";
 export { Tabs, type TabItem, type TabsProps, type TabsVariant } from "./tabs";
 export { Textarea, type TextareaProps } from "./textarea";

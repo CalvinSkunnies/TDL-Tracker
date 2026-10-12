@@ -7,7 +7,7 @@ import { cn } from "@/lib/cn";
 import { ThemeToggle } from "./theme-toggle";
 
 const links = [
-  { href: "/", label: "Home" },
+  { href: "/", label: "Tasks" },
   { href: "/design-system", label: "Design system" },
 ];
 

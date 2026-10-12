@@ -7,12 +7,15 @@ export interface TextareaProps extends ComponentProps<"textarea"> {
   label?: ReactNode;
   hint?: ReactNode;
   error?: ReactNode;
+  /** Classes for the outer wrapper (label + control + message). */
+  wrapperClassName?: string;
 }
 
 export function Textarea({
   label,
   hint,
   error,
+  wrapperClassName,
   id,
   className,
   rows = 4,
@@ -27,7 +30,13 @@ export function Textarea({
       : undefined;
 
   return (
-    <Field id={textareaId} label={label} hint={hint} error={error}>
+    <Field
+      id={textareaId}
+      label={label}
+      hint={hint}
+      error={error}
+      className={wrapperClassName}
+    >
       <textarea
         id={textareaId}
         rows={rows}

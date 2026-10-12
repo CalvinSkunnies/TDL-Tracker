@@ -8,12 +8,15 @@ export interface CheckboxProps extends Omit<
 > {
   label: ReactNode;
   description?: ReactNode;
+  /** Keep the label for screen readers only (e.g. a checkbox in a list row). */
+  hideLabel?: boolean;
 }
 
 /** Native checkbox, so keyboard, form and screen-reader behavior come for free. */
 export function Checkbox({
   label,
   description,
+  hideLabel = false,
   id,
   className,
   disabled,
@@ -25,7 +28,8 @@ export function Checkbox({
   return (
     <div
       className={cn(
-        "flex items-start gap-3",
+        "flex items-start",
+        !hideLabel && "gap-3",
         disabled && "opacity-50",
         className,
       )}
@@ -65,6 +69,7 @@ export function Checkbox({
           htmlFor={inputId}
           className={cn(
             "text-ink text-sm font-medium",
+            hideLabel && "sr-only",
             !disabled && "cursor-pointer",
           )}
         >

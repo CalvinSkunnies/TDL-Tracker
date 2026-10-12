@@ -57,6 +57,29 @@ shadows and motion live in the `@theme` block in `app/globals.css`.
   (and `prefers-color-scheme` until the user picks). The nav toggle stores the
   choice; an inline script in `app/layout.tsx` applies it before first paint.
 
+## Task tracker
+
+The home page (`/`) is a personal to-do and workload tracker. All data lives in
+this browser's `localStorage`; nothing is sent anywhere (no backend, database
+or external API).
+
+- **Data model:** `lib/types.ts`. Domain logic (validation, recurrence,
+  filtering, grouping) is in `lib/tasks.ts`.
+- **Storage:** `lib/store.ts` keeps `{ version, tasks }` under the key
+  `tdl-tracker:data`. It is SSR-safe (no `window` access on the server), syncs
+  across tabs, and reports blocked, full or unreadable storage in the UI.
+- **Hook:** `useTasks()` in `lib/use-tasks.ts` exposes `tasks`, `addTask`,
+  `updateTask`, `deleteTask`, `toggleStatus`, `filters` and derived lists.
+- **Schema changes:** bump `SCHEMA_VERSION` in `lib/store.ts` and add a
+  migration to the `migrations` map, keyed by the version it upgrades from.
+  Unreadable data is copied to `tdl-tracker:data:backup` instead of being
+  overwritten.
+- **Recurring tasks:** finishing one creates the next copy, due on the next
+  matching day after today (or after its due date if that is later).
+- **Keyboard:** `n` focuses quick add, `/` focuses search, Enter on a title
+  opens the editor, Escape closes dialogs.
+- Data is per browser and per origin; clearing site data erases it.
+
 ## Private access gate
 
 Every route except `/login` requires a signed session cookie.

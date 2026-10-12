@@ -9,6 +9,7 @@ import {
   CardTitle,
   Checkbox,
   Input,
+  Select,
   Tabs,
   Textarea,
 } from "@/components/ui";
@@ -43,7 +44,7 @@ const swatches = [
   },
   {
     name: "clay-700",
-    hex: "#A94A2B",
+    hex: "#9d4325",
     dark: "#F2A98D",
     className: "bg-clay-700",
   },
@@ -138,6 +139,8 @@ export default function DesignSystemPage() {
             <Button>Save changes</Button>
             <Button variant="secondary">Cancel</Button>
             <Button variant="ghost">Skip for now</Button>
+            <Button variant="danger">Delete task</Button>
+            <Button variant="danger-ghost">Remove</Button>
             <Button disabled>Disabled</Button>
           </div>
           <div className="flex flex-wrap items-center gap-3">
@@ -182,8 +185,13 @@ export default function DesignSystemPage() {
             defaultValue="ada@"
             error="Enter a full email address, like ada@example.com."
           />
+          <Select label="Priority" defaultValue="medium">
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+          </Select>
           <Textarea
-            className="sm:col-span-2"
+            wrapperClassName="sm:col-span-2"
             label="Notes"
             placeholder="Anything worth remembering…"
           />

@@ -7,12 +7,15 @@ export interface InputProps extends Omit<ComponentProps<"input">, "size"> {
   label?: ReactNode;
   hint?: ReactNode;
   error?: ReactNode;
+  /** Classes for the outer wrapper (label + control + message). */
+  wrapperClassName?: string;
 }
 
 export function Input({
   label,
   hint,
   error,
+  wrapperClassName,
   id,
   className,
   ...props
@@ -26,7 +29,13 @@ export function Input({
       : undefined;
 
   return (
-    <Field id={inputId} label={label} hint={hint} error={error}>
+    <Field
+      id={inputId}
+      label={label}
+      hint={hint}
+      error={error}
+      className={wrapperClassName}
+    >
       <input
         id={inputId}
         aria-invalid={error ? true : undefined}
