@@ -41,6 +41,19 @@ No variables are required yet. `.env.local` is gitignored; only
 `.env.local.example` is committed. Variables prefixed with `NEXT_PUBLIC_` are
 exposed to the browser; all others are server-only.
 
+## Design system
+
+A warm, editorial theme (cream surfaces, clay accent, Fraunces + Inter).
+Tailwind v4 has no `tailwind.config` file; tokens for color, fonts, radii,
+shadows and motion live in the `@theme` block in `app/globals.css`.
+
+- Primitives: `components/ui/` (Button, Card, Input, Textarea, Checkbox,
+  Badge, Modal, Tabs). Import from `@/components/ui`.
+- Layout shell: `components/layout/site-nav.tsx` and the container in
+  `app/layout.tsx`.
+- Review everything at `/design-system` while running `npm run dev`.
+- Fonts are self-hosted through `@fontsource-variable/*` and `next/font/local`.
+
 ## Deploy on Vercel
 
 Pushing to `main` deploys to production automatically once the repository is
