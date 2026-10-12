@@ -20,6 +20,8 @@ const inter = localFont({
 export const metadata: Metadata = {
   title: "web-app",
   description: "Next.js, TypeScript and Tailwind CSS starter",
+  // Private site: ask search engines not to index it.
+  robots: { index: false, follow: false },
 };
 
 /**

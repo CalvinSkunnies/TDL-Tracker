@@ -37,7 +37,7 @@ Copy the example file and fill in values as needed:
 cp .env.local.example .env.local
 ```
 
-No variables are required yet. `.env.local` is gitignored; only
+Two variables are required (see below). `.env.local` is gitignored; only
 `.env.local.example` is committed. Variables prefixed with `NEXT_PUBLIC_` are
 exposed to the browser; all others are server-only.
 
@@ -53,6 +53,36 @@ shadows and motion live in the `@theme` block in `app/globals.css`.
   `app/layout.tsx`.
 - Review everything at `/design-system` while running `npm run dev`.
 - Fonts are self-hosted through `@fontsource-variable/*` and `next/font/local`.
+- Dark mode: the same token names are remapped under `[data-theme="dark"]`
+  (and `prefers-color-scheme` until the user picks). The nav toggle stores the
+  choice; an inline script in `app/layout.tsx` applies it before first paint.
+
+## Private access gate
+
+Every route except `/login` requires a signed session cookie.
+
+- `proxy.ts` runs before any page renders and redirects visitors without a
+  valid cookie to `/login`. (Next.js 16 renamed `middleware.ts` to `proxy.ts`;
+  it is the same feature, and it runs on the Node.js runtime.)
+- `/login` takes one passphrase (`APP_PASSPHRASE`). It is compared in constant
+  time; wrong guesses are delayed by 700 ms.
+- On success the server sets an HS256 JWT (via `jose`) signed with
+  `AUTH_SECRET`, valid for 7 days. Cookie flags: `HttpOnly`, `Secure` (in
+  production), `SameSite=Lax`, `Path=/`, and the `__Host-` prefix in
+  production. JavaScript cannot read it, and the browser only sends it over
+  HTTPS to this exact host.
+- **Log out** in the nav clears the cookie.
+- It fails closed: if either variable is missing (or `AUTH_SECRET` is shorter
+  than 32 characters), nobody can sign in.
+- Changing `APP_PASSPHRASE` or `AUTH_SECRET` signs out every session.
+
+Why not client-only auth: a client-side check runs after the page and its data
+have already been sent, so anyone can read the source, disable the script or
+call the endpoints directly. Here the check happens on the server before
+anything is rendered, and the proof of login is a cookie that scripts cannot
+read or forge without `AUTH_SECRET`.
+
+Generate a secret with `openssl rand -base64 32`.
 
 ## Deploy on Vercel
 
@@ -69,8 +99,8 @@ connected to Vercel.
 5. Click **Import**. Vercel detects Next.js automatically; leave the defaults
    (Framework Preset: Next.js, Build Command: `next build`, Output Directory:
    default, Install Command: `npm install`).
-6. Under **Environment Variables**, add anything from `.env.local.example`
-   that the app needs (none are required yet).
+6. Under **Environment Variables**, add `APP_PASSPHRASE` and `AUTH_SECRET`
+   (see below). Without them nobody can sign in.
 7. Click **Deploy**.
 
 After the first deploy:
@@ -80,5 +110,10 @@ After the first deploy:
   deployment with its own URL.
 - To confirm the production branch, open **Project Settings > Git** and check
   that **Production Branch** is `main`.
+- To set the gate's variables on an existing project: **Project Settings >
+  Environment Variables**, add `APP_PASSPHRASE` and `AUTH_SECRET` (leave
+  **Sensitive** on, tick Production and Preview, and do not add a
+  `NEXT_PUBLIC_` prefix), then **Redeploy** so the new values take effect.
+  Locally, put the same two lines in `.env.local`.
 - Environment variables can be changed later under **Project Settings >
   Environment Variables**; redeploy for changes to take effect.
