@@ -1,0 +1,18 @@
+node_modules
+.next
+out
+build
+coverage
+package-lock.json
+next-env.d.ts
+
+# Non-project files that live in this home directory
+.cache
+.config
+.npm
+.npm-global
+.pki
+.ssh
+.claude
+.wget-hsts
+.gitconfig
