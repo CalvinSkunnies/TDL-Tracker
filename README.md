@@ -1,17 +1,17 @@
 # web-app
 
-## Purpose
-
-A web application scaffold built with Next.js (App Router), TypeScript and
-Tailwind CSS, with ESLint and Prettier preconfigured and ready to deploy on
-Vercel. This repository currently contains only the starter setup; features
-will be added in later steps.
+A private, offline-capable personal task and workload tracker built with
+Next.js (App Router), TypeScript and Tailwind CSS. It is gated behind a single
+passphrase and keeps all data in the browser — there is no backend, database or
+external API.
 
 ## Stack
 
-- [Next.js](https://nextjs.org) (App Router, `app/` directory)
+- [Next.js](https://nextjs.org) 16 (App Router, `app/` directory; `proxy.ts`
+  replaces the old `middleware.ts`)
 - TypeScript
-- Tailwind CSS
+- Tailwind CSS v4
+- `jose` for the signed session cookie
 - ESLint (with `eslint-config-next`) + Prettier (with the Tailwind class
   sorting plugin)
 
@@ -20,14 +20,17 @@ will be added in later steps.
 Requires Node.js 20.9 or newer (Node 22 is recommended) and npm.
 
 ```bash
-npm install        # install dependencies
-npm run dev        # start the dev server at http://localhost:3000
-npm run build      # create a production build
-npm run start      # serve the production build locally
-npm run lint       # run ESLint
-npm run format     # format all files with Prettier
+npm install           # install dependencies
+npm run dev           # start the dev server at http://localhost:3000
+npm run build         # create a production build
+npm run start         # serve the production build locally
+npm run lint          # run ESLint
+npm run format        # format all files with Prettier
 npm run format:check  # check formatting without writing changes
 ```
+
+The app lives at **`/tracker`** (`/` redirects there). `/design-system` previews
+the UI primitives.
 
 ### Environment variables
 
@@ -37,9 +40,10 @@ Copy the example file and fill in values as needed:
 cp .env.local.example .env.local
 ```
 
-Two variables are required (see below). `.env.local` is gitignored; only
-`.env.local.example` is committed. Variables prefixed with `NEXT_PUBLIC_` are
-exposed to the browser; all others are server-only.
+Two variables are required (see [Private access gate](#private-access-gate)).
+`.env.local` is gitignored; only `.env.local.example` is committed. Variables
+prefixed with `NEXT_PUBLIC_` are exposed to the browser; all others are
+server-only.
 
 ## Design system
 
@@ -50,18 +54,17 @@ shadows and motion live in the `@theme` block in `app/globals.css`.
 - Primitives: `components/ui/` (Button, Card, Input, Textarea, Checkbox,
   Badge, Modal, Tabs). Import from `@/components/ui`.
 - Layout shell: `components/layout/site-nav.tsx` and the container in
-  `app/layout.tsx`.
+  `app/layout.tsx`. The nav collapses to a menu button on small screens.
 - Review everything at `/design-system` while running `npm run dev`.
 - Fonts are self-hosted through `@fontsource-variable/*` and `next/font/local`.
-- Dark mode: the same token names are remapped under `[data-theme="dark"]`
-  (and `prefers-color-scheme` until the user picks). The nav toggle stores the
-  choice; an inline script in `app/layout.tsx` applies it before first paint.
+- Dark mode: the same token names are remapped under `[data-theme="dark"]`.
+  The nav toggle stores the choice; an inline script applies it before first
+  paint. The whole app respects `prefers-reduced-motion`.
 
 ## Task tracker
 
-The home page (`/`) is a personal to-do and workload tracker. All data lives in
-this browser's `localStorage`; nothing is sent anywhere (no backend, database
-or external API).
+The tracker (`/tracker`) keeps everything in this browser's `localStorage`;
+nothing is sent anywhere.
 
 - **Data model:** `lib/types.ts`. Domain logic (validation, recurrence,
   filtering, grouping) is in `lib/tasks.ts`.
@@ -69,6 +72,7 @@ or external API).
   `{ version, tasks, templates, journal, settings }` under the key
   `tdl-tracker:data`. It is SSR-safe (no `window` access on the server), syncs
   across tabs, and reports blocked, full or unreadable storage in the UI.
+  Writes are debounced (coalesced) and flushed on page hide.
 - **Hook:** `useTasks()` in `lib/use-tasks.ts` exposes `tasks`, `templates`,
   `journal`, `settings` and actions (`addTask`, `saveTask`, `deleteTask`,
   `deleteSeries`, `toggleStatus`, `startTimer`, `stopTimer`,
@@ -83,29 +87,37 @@ or external API).
   instanceDate)` and never backfills past days. Editing or deleting an
   instance can apply to *this task only* or *this and all future* instances.
 - **Time tracking:** each task has an estimate and a running stopwatch; when
-  stopped, the elapsed time is banked into the task's actual minutes, and the
-  row flags whether it ran over or under the estimate.
+  stopped, elapsed time is banked into the task's actual minutes, and the row
+  flags whether it ran over or under the estimate.
 - **Daily capacity:** today's open-task estimates are totalled against a
   configurable hours target (`settings.dailyCapacityHours`).
+- **Insights:** `lib/insights.ts` derives completion rate, focused time per
+  day, estimate-vs-actual, the current completion streak and overload warnings
+  for a 7- or 30-day window. Charts are dependency-free inline SVG
+  (`components/tasks/charts.tsx`).
 - **Journal:** one free-form end-of-day entry per date, keyed by `YYYY-MM-DD`.
-- **Backup:** export all data to a JSON file and import it back (import
-  replaces everything).
-- **Keyboard:** `n` focuses quick add, `/` focuses search, Enter on a title
-  opens the editor, Escape closes dialogs.
-- Data is per browser and per origin; clearing site data erases it.
+- **Feedback:** actions raise toasts (`components/tasks/toaster.tsx`); a
+  route-level error boundary (`app/error.tsx`) keeps the UI recoverable.
+- **Keyboard:** `Cmd/Ctrl+K` opens the command palette, `n` focuses quick add,
+  `/` focuses search, Enter on a title opens the editor, Escape closes dialogs.
+- Data is per browser and per origin; clearing site data erases it. See
+  [Backup & export](#backup--export).
 
 ## Private access gate
 
-Every route except `/login` requires a signed session cookie.
+Every route except `/login` requires a signed session cookie. The PWA files the
+browser must fetch without a session (`/sw.js`, `/manifest.webmanifest`,
+`/offline.html`) and static assets are excluded from the gate.
 
 - `proxy.ts` runs before any page renders and redirects visitors without a
   valid cookie to `/login`. (Next.js 16 renamed `middleware.ts` to `proxy.ts`;
   it is the same feature, and it runs on the Node.js runtime.)
 - `/login` takes one passphrase (`APP_PASSPHRASE`). It is compared in constant
-  time; wrong guesses are delayed by 700 ms.
+  time; wrong guesses are delayed by 700 ms, and five failures from the same IP
+  within 15 minutes trigger a 15-minute lockout (`lib/login-throttle.ts`).
 - On success the server sets an HS256 JWT (via `jose`) signed with
   `AUTH_SECRET`, valid for 7 days. Cookie flags: `HttpOnly`, `Secure` (in
-  production), `SameSite=Lax`, `Path=/`, and the `__Host-` prefix in
+  production), `SameSite=Strict`, `Path=/`, and the `__Host-` prefix in
   production. JavaScript cannot read it, and the browser only sends it over
   HTTPS to this exact host.
 - **Log out** in the nav clears the cookie.
@@ -120,6 +132,96 @@ anything is rendered, and the proof of login is a cookie that scripts cannot
 read or forge without `AUTH_SECRET`.
 
 Generate a secret with `openssl rand -base64 32`.
+
+> The login lockout is held in memory, so on serverless hosting it survives
+> only on a warm instance. It discourages brute force but is not a hard cap; back
+> it with shared storage (e.g. Vercel KV / Upstash Redis) if you need one.
+
+## Private URL & routing strategy
+
+The tracker is served on the main site at **`/tracker`**, behind the middleware
+gate. This is the option this repo implements (option **a**).
+
+**Tradeoffs**
+
+- **Option A — `/tracker` on the main site (chosen).** One project, one set of
+  env vars, one deploy, one login. The gate protects every route. The URL is
+  long (`your-project.vercel.app/tracker`) and the tracker shares the domain
+  with `/design-system`.
+- **Option B — a separate Vercel project.** Gives a distinct
+  `*.vercel.app` URL (e.g. `calvinskunnies-todo.vercel.app`) and independent
+  deploys, but doubles the configuration (two projects, two sets of env vars,
+  two logins) and splits the codebase. Choose it when you want the tracker to
+  have its own address without owning a domain.
+
+You **cannot** create subdomains of `*.vercel.app` — Vercel owns that domain. A
+name like `todo.yourdomain.com` requires owning a custom domain.
+
+### Adding a custom domain (optional)
+
+1. In the Vercel project: **Settings > Domains > Add**, enter
+   `todo.yourdomain.com`, and choose the project to attach it to.
+2. At your DNS provider, create a **CNAME** record pointing the subdomain to
+   `cname.vercel-dns.com`:
+   - Host: `todo`
+   - Type: `CNAME`
+   - Value: `cname.vercel-dns.com`
+   - TTL: automatic / 300s
+3. For an apex domain (`yourdomain.com`) use an **A** record to `76.76.21.21`
+   instead, or point the nameservers at Vercel.
+4. Wait for DNS to propagate; Vercel issues a TLS certificate automatically.
+   The app then lives at `https://todo.yourdomain.com/tracker`.
+
+Set `NEXT_PUBLIC_APP_URL` (optional) to the custom domain for your own
+reference; the app does not require it.
+
+## PWA / offline
+
+- `app/manifest.ts` serves `/manifest.webmanifest` (name, theme colors,
+  `start_url: /tracker`). `app/icon.svg` is the app icon.
+- `public/sw.js` caches the app shell: navigations are network-first with an
+  offline fallback (`public/offline.html`); other same-origin GETs use
+  stale-while-revalidate.
+- `components/pwa/service-worker-register.tsx` registers the worker in
+  production only (so it never fights the dev server).
+- Tasks live in `localStorage`, which the service worker never touches, so your
+  data persists across reloads, reinstalls and offline sessions.
+- Chromium install banners are happiest with raster 192px and 512px PNG icons.
+  The SVG icon works, but add `public/icon-192.png` and `public/icon-512.png`
+  and list them in `app/manifest.ts` for the richest install UI.
+
+## Backup & export
+
+`localStorage` is **per browser and per origin**, so data does not sync between
+devices and is lost if you clear site data.
+
+- **Export** (header button, or **Cmd/Ctrl+K > Export backup**) downloads a JSON
+  file (`tdl-tracker-YYYY-MM-DD.json`) with everything.
+- **Import** (header button) replaces all current data from that file after a
+  confirmation prompt.
+- Export before clearing site data, switching browsers, or moving devices.
+
+## Rotating the passphrase
+
+1. Change `APP_PASSPHRASE` (and, if you wish, `AUTH_SECRET`) in
+   **Vercel > Settings > Environment Variables**, then **Redeploy**.
+2. Because the signing key is derived from both values, every existing session
+   is invalidated immediately and everyone must sign in again.
+3. Update `.env.local` locally so development matches.
+
+## Security checklist
+
+- [x] Middleware/proxy protects every route except `/login` and the public PWA
+      assets.
+- [x] Session cookie is `HttpOnly`, `Secure` (prod), `SameSite=Strict`, `Path=/`
+      with the `__Host-` prefix in production.
+- [x] Login has a constant-time compare, a fixed delay, and an IP lockout after
+      five failures.
+- [x] Security headers set in `next.config.ts`: CSP, `X-Frame-Options: DENY`,
+      `X-Content-Type-Options: nosniff`, `Referrer-Policy`,
+      `Permissions-Policy`, and HSTS. `X-Powered-By` is disabled.
+- [x] `.env*` is gitignored (only `.env.local.example` is committed); no secrets
+      are in the repo.
 
 ## Deploy on Vercel
 
@@ -154,3 +256,14 @@ After the first deploy:
   Locally, put the same two lines in `.env.local`.
 - Environment variables can be changed later under **Project Settings >
   Environment Variables**; redeploy for changes to take effect.
+
+### Manual checklist (things only you can do)
+
+1. **Vercel env vars** — set `APP_PASSPHRASE` (a long unique phrase) and
+   `AUTH_SECRET` (`openssl rand -base64 32`, 32+ chars) for Production and
+   Preview, then redeploy.
+2. **Domain DNS** (optional) — add the custom domain in Vercel and the
+   `CNAME`/`A` record at your DNS provider as described above.
+3. **First login** — open `https://<your-project>.vercel.app/tracker`, get
+   redirected to `/login`, enter the passphrase.
+4. **Export a backup** once you have data, and again before clearing site data.

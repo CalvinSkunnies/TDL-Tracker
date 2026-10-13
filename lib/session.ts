@@ -17,7 +17,10 @@ export const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7; // 7 days
 export const SESSION_COOKIE_OPTIONS = {
   httpOnly: true, // not readable from JavaScript
   secure: process.env.NODE_ENV === "production", // HTTPS only in production
-  sameSite: "lax" as const,
+  // Strict: the cookie is never sent on cross-site navigations, which blocks
+  // CSRF from other origins. The only cost is that following a link in from
+  // another site lands on /login once and then works normally.
+  sameSite: "strict" as const,
   path: "/",
 };
 

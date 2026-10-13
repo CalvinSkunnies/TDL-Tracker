@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui";
+import { downloadTextFile } from "@/lib/backup";
 
 interface DataControlsProps {
   /** "YYYY-MM-DD", used in the export filename. */
@@ -16,16 +17,7 @@ export function DataControls({ today, onExport, onImport }: DataControlsProps) {
   const [message, setMessage] = useState("");
 
   function handleExport() {
-    const text = onExport();
-    const blob = new Blob([text], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `tdl-tracker-${today || "backup"}.json`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
+    downloadTextFile(`tdl-tracker-${today || "backup"}.json`, onExport());
     setMessage("Exported.");
   }
 

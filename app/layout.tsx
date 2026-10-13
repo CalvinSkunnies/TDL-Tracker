@@ -1,6 +1,7 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { SiteNav } from "@/components/layout/site-nav";
+import { ServiceWorkerRegister } from "@/components/pwa/service-worker-register";
 import "./globals.css";
 
 const fraunces = localFont({
@@ -22,6 +23,12 @@ export const metadata: Metadata = {
   description: "Next.js, TypeScript and Tailwind CSS starter",
   // Private site: ask search engines not to index it.
   robots: { index: false, follow: false },
+  appleWebApp: { capable: true, title: "Tasks", statusBarStyle: "default" },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#d97757",
+  colorScheme: "light dark",
 };
 
 /**
@@ -45,6 +52,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <main className="mx-auto w-full max-w-4xl flex-1 px-5 py-12 sm:px-8 sm:py-16">
           {children}
         </main>
+        <ServiceWorkerRegister />
       </body>
     </html>
   );

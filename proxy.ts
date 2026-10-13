@@ -29,8 +29,10 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Everything except Next's static output and public image/font files.
+  // Everything except Next's static output, the PWA files the browser fetches
+  // without a session (manifest and service worker), and public assets. Those
+  // must stay public or the app could not be installed or run offline.
   matcher: [
-    "/((?!_next/static|_next/image|favicon\\.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?)$).*)",
+    "/((?!_next/static|_next/image|favicon\\.ico|sw\\.js|manifest\\.webmanifest|offline\\.html|robots\\.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?)$).*)",
   ],
 };

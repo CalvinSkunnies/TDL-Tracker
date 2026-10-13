@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { downloadTextFile, prefersReducedMotion } from "@/lib/backup";
 import type { SaveOptions } from "@/lib/store";
 import { useTasks } from "@/lib/use-tasks";
 import { useToday } from "@/lib/use-today";
 import type { Task, TaskPatch, TaskStatus } from "@/lib/types";
 import { CapacityView } from "./capacity-view";
+import { CommandPalette } from "./command-palette";
 import { DataControls } from "./data-controls";
 import { DeleteDialog } from "./delete-dialog";
 import { FilterBar } from "./filter-bar";
@@ -13,8 +15,10 @@ import { Journal } from "./journal";
 import { STATUS_LABELS } from "./labels";
 import { QuickAdd } from "./quick-add";
 import { EmptyState, LoadingState, NoResultsState } from "./states";
+import { StatsDashboard } from "./stats-dashboard";
 import { TaskEditor, type SaveScope } from "./task-editor";
 import { TaskRow } from "./task-row";
+import { Toaster, useToasts } from "./toaster";
 
 const GROUP_ORDER: TaskStatus[] = ["todo", "in-progress", "done"];
 
@@ -33,6 +37,17 @@ function isTypingTarget(target: EventTarget | null): boolean {
     target.isContentEditable ||
     ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName)
   );
+}
+
+function toggleTheme() {
+  const root = document.documentElement;
+  const next = root.dataset.theme === "dark" ? "light" : "dark";
+  root.dataset.theme = next;
+  try {
+    localStorage.setItem("theme", next);
+  } catch {
+    // Storage can be blocked; the theme still applies for this visit.
+  }
 }
 
 export function TasksApp() {
@@ -64,10 +79,11 @@ export function TasksApp() {
     counts,
   } = useTasks();
   const today = useToday();
+  const { toasts, notify, dismiss } = useToasts();
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<Task | null>(null);
-  const [announcement, setAnnouncement] = useState("");
+  const [paletteOpen, setPaletteOpen] = useState(false);
 
   /**
    * A row that changes group is re-created, which would drop keyboard focus.
@@ -109,11 +125,20 @@ export function TasksApp() {
       ?.focus();
   });
 
-  // Keyboard shortcuts: "n" = new task, "/" = search.
+  // Keyboard shortcuts: Cmd/Ctrl+K palette, "n" new task, "/" search.
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      if (event.defaultPrevented || event.metaKey || event.ctrlKey) return;
-      if (event.altKey || isTypingTarget(event.target)) return;
+      if (event.defaultPrevented) return;
+      if (
+        (event.metaKey || event.ctrlKey) &&
+        event.key.toLowerCase() === "k"
+      ) {
+        event.preventDefault();
+        setPaletteOpen(true);
+        return;
+      }
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      if (isTypingTarget(event.target)) return;
       if (document.querySelector("dialog[open]")) return;
       if (event.key === "n") {
         event.preventDefault();
@@ -135,7 +160,7 @@ export function TasksApp() {
   function handleAdd(title: string): boolean {
     const task = addTask({ title });
     if (!task) return false;
-    setAnnouncement(`Added “${task.title}”.`);
+    notify(`Added “${task.title}”.`, "success");
     return true;
   }
 
@@ -143,10 +168,11 @@ export function TasksApp() {
     const updated = toggleStatus(task.id);
     pendingFocus.current = { id: task.id, target: "checkbox" };
     if (updated) {
-      setAnnouncement(
+      notify(
         updated.status === "done"
           ? `Completed “${task.title}”.`
           : `Reopened “${task.title}”.`,
+        updated.status === "done" ? "success" : "info",
       );
     }
   }
@@ -154,14 +180,14 @@ export function TasksApp() {
   function handleStatusChange(task: Task, status: TaskStatus) {
     saveTask(task.id, { status });
     pendingFocus.current = { id: task.id, target: "status" };
-    setAnnouncement(`Moved “${task.title}” to ${STATUS_LABELS[status]}.`);
+    notify(`Moved “${task.title}” to ${STATUS_LABELS[status]}.`);
   }
 
   function handleSave(id: string, patch: TaskPatch, options: SaveOptions) {
     saveTask(id, patch, options);
     pendingFocus.current = { id, target: "open" };
     setEditingId(null);
-    setAnnouncement("Task saved.");
+    notify("Task saved.", "success");
   }
 
   function handleConfirmDelete(task: Task, scope: SaveScope) {
@@ -172,7 +198,7 @@ export function TasksApp() {
       deleteTask(task.id);
     }
     setDeleting(null);
-    setAnnouncement(
+    notify(
       stopsSeries
         ? `Deleted “${task.title}” and stopped the series.`
         : `Deleted “${task.title}”.`,
@@ -184,6 +210,39 @@ export function TasksApp() {
     setEditingId(null);
     setDeleting(task);
   }
+
+  const commands = [
+    {
+      id: "add",
+      label: "Add task",
+      hint: "N",
+      run: () => quickAddRef.current?.focus(),
+    },
+    {
+      id: "search",
+      label: "Search tasks",
+      hint: "/",
+      run: () => searchRef.current?.focus(),
+    },
+    {
+      id: "export",
+      label: "Export backup",
+      run: () =>
+        downloadTextFile(`tdl-tracker-${today || "backup"}.json`, exportData()),
+    },
+    {
+      id: "insights",
+      label: "Show insights",
+      run: () => {
+        const target = document.getElementById("insights");
+        target?.scrollIntoView({
+          behavior: prefersReducedMotion() ? "auto" : "smooth",
+          block: "start",
+        });
+      },
+    },
+    { id: "theme", label: "Toggle theme", run: toggleTheme },
+  ];
 
   const showList = !isLoading && tasks.length > 0 && visibleTasks.length > 0;
 
@@ -232,8 +291,9 @@ export function TasksApp() {
 
       <QuickAdd onAdd={handleAdd} disabled={isLoading} inputRef={quickAddRef} />
       <p className="text-ink-muted mt-2 text-xs">
-        Press <kbd className="font-sans font-semibold">n</kbd> to add and{" "}
-        <kbd className="font-sans font-semibold">/</kbd> to search.
+        Press <kbd className="font-sans font-semibold">n</kbd> to add,{" "}
+        <kbd className="font-sans font-semibold">/</kbd> to search,{" "}
+        <kbd className="font-sans font-semibold">⌘K</kbd> for commands.
       </p>
 
       {!isLoading && tasks.length > 0 && (
@@ -303,6 +363,12 @@ export function TasksApp() {
 
       {!isLoading && (
         <div className="mt-12">
+          <StatsDashboard tasks={tasks} settings={settings} today={today} />
+        </div>
+      )}
+
+      {!isLoading && (
+        <div className="mt-12">
           <Journal today={today} entries={journal} onChange={setJournalEntry} />
         </div>
       )}
@@ -319,11 +385,12 @@ export function TasksApp() {
         onConfirm={handleConfirmDelete}
         onCancel={() => setDeleting(null)}
       />
-
-      {/* Screen-reader announcements for actions that change the list. */}
-      <p role="status" aria-live="polite" className="sr-only">
-        {announcement}
-      </p>
+      <CommandPalette
+        open={paletteOpen}
+        commands={commands}
+        onClose={() => setPaletteOpen(false)}
+      />
+      <Toaster toasts={toasts} onDismiss={dismiss} />
     </div>
   );
 }

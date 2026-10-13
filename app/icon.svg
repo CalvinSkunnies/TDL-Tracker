@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="web-app task tracker">
+  <rect width="512" height="512" rx="112" fill="#d97757" />
+  <path
+    d="M150 265l70 70 145-155"
+    fill="none"
+    stroke="#1a1a1a"
+    stroke-width="46"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>

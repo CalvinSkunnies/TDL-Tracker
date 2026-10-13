@@ -310,17 +310,69 @@ function currentState(): PersistedState {
   };
 }
 
-function commit(state: PersistedState) {
-  const saved = saveState(state);
-  // Keep working in memory even if the write failed, but tell the UI.
-  snapshot = {
+function toSnapshot(
+  state: PersistedState,
+  problem: StorageProblem | null,
+): StoreSnapshot {
+  return {
     tasks: state.tasks,
     templates: state.templates,
     journal: state.journal,
     settings: state.settings,
-    problem: saved ? null : "save-failed",
+    problem,
   };
+}
+
+/**
+ * Writes are coalesced: the in-memory snapshot updates instantly for the UI,
+ * but the (synchronous, main-thread) localStorage write is debounced. A burst
+ * of edits therefore causes one write, and rapid actions can't thrash storage.
+ */
+const SAVE_DELAY_MS = 400;
+
+let pending: PersistedState | null = null;
+let saveTimer: number | null = null;
+
+/** Persists any pending state immediately (called on a timer and on page hide). */
+export function flushPendingSave(): void {
+  if (saveTimer !== null) {
+    if (typeof window !== "undefined") window.clearTimeout(saveTimer);
+    saveTimer = null;
+  }
+  if (!pending) return;
+  const state = pending;
+  pending = null;
+
+  const ok = saveState(state);
+  const problem: StorageProblem | null = ok ? null : "save-failed";
+  const current = getSnapshot();
+  if (current.problem !== problem) {
+    snapshot = { ...current, problem };
+    emit();
+  }
+}
+
+function commit(state: PersistedState) {
+  // Optimistic, synchronous update so the UI never waits on storage.
+  snapshot = toSnapshot(state, null);
   emit();
+
+  pending = state;
+  if (typeof window === "undefined") {
+    flushPendingSave();
+    return;
+  }
+  if (saveTimer === null) {
+    saveTimer = window.setTimeout(flushPendingSave, SAVE_DELAY_MS);
+  }
+}
+
+// Make sure the last edit survives a tab close or a background switch.
+if (typeof window !== "undefined") {
+  window.addEventListener("pagehide", flushPendingSave);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") flushPendingSave();
+  });
 }
 
 /* ------------------------------------------------------------------ */

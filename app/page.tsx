@@ -1,8 +1,6 @@
-import type { Metadata } from "next";
-import { TasksApp } from "@/components/tasks/tasks-app";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = { title: "Tasks · web-app" };
-
+/** The tracker lives at /tracker; keep the root as a simple entry point. */
 export default function Home() {
-  return <TasksApp />;
+  redirect("/tracker");
 }
