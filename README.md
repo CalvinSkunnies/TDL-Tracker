@@ -65,17 +65,31 @@ or external API).
 
 - **Data model:** `lib/types.ts`. Domain logic (validation, recurrence,
   filtering, grouping) is in `lib/tasks.ts`.
-- **Storage:** `lib/store.ts` keeps `{ version, tasks }` under the key
+- **Storage:** `lib/store.ts` keeps
+  `{ version, tasks, templates, journal, settings }` under the key
   `tdl-tracker:data`. It is SSR-safe (no `window` access on the server), syncs
   across tabs, and reports blocked, full or unreadable storage in the UI.
-- **Hook:** `useTasks()` in `lib/use-tasks.ts` exposes `tasks`, `addTask`,
-  `updateTask`, `deleteTask`, `toggleStatus`, `filters` and derived lists.
+- **Hook:** `useTasks()` in `lib/use-tasks.ts` exposes `tasks`, `templates`,
+  `journal`, `settings` and actions (`addTask`, `saveTask`, `deleteTask`,
+  `deleteSeries`, `toggleStatus`, `startTimer`, `stopTimer`,
+  `setDailyCapacityHours`, `setJournalEntry`, `exportData`, `importData`) plus
+  derived lists.
 - **Schema changes:** bump `SCHEMA_VERSION` in `lib/store.ts` and add a
   migration to the `migrations` map, keyed by the version it upgrades from.
   Unreadable data is copied to `tdl-tracker:data:backup` instead of being
   overwritten.
-- **Recurring tasks:** finishing one creates the next copy, due on the next
-  matching day after today (or after its due date if that is later).
+- **Recurring tasks (series + instances):** a series is a `TaskTemplate`;
+  each day the app generates at most one instance per `(seriesId,
+  instanceDate)` and never backfills past days. Editing or deleting an
+  instance can apply to *this task only* or *this and all future* instances.
+- **Time tracking:** each task has an estimate and a running stopwatch; when
+  stopped, the elapsed time is banked into the task's actual minutes, and the
+  row flags whether it ran over or under the estimate.
+- **Daily capacity:** today's open-task estimates are totalled against a
+  configurable hours target (`settings.dailyCapacityHours`).
+- **Journal:** one free-form end-of-day entry per date, keyed by `YYYY-MM-DD`.
+- **Backup:** export all data to a JSON file and import it back (import
+  replaces everything).
 - **Keyboard:** `n` focuses quick add, `/` focuses search, Enter on a title
   opens the editor, Escape closes dialogs.
 - Data is per browser and per origin; clearing site data erases it.

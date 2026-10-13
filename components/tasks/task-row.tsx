@@ -2,16 +2,21 @@
 
 import { Badge, Button, Checkbox } from "@/components/ui";
 import { cn } from "@/lib/cn";
-import type { Task } from "@/lib/types";
+import type { Recurrence, Task } from "@/lib/types";
 import { RECURRENCE_LABELS, describeDue, formatMinutes } from "./labels";
+import { TaskTimer } from "./task-timer";
 
 interface TaskRowProps {
   task: Task;
   /** "YYYY-MM-DD" in local time, used for due-date wording. */
   today: string;
+  /** The series rule this task repeats on, or null when it is a one-off. */
+  recurrence: Recurrence | null;
   onToggle: (task: Task) => void;
   onOpen: (task: Task) => void;
   onStatusChange: (task: Task, status: Task["status"]) => void;
+  onStartTimer: (task: Task) => void;
+  onStopTimer: (task: Task) => void;
   onDelete: (task: Task) => void;
   onTagClick: (tag: string) => void;
 }
@@ -34,14 +39,18 @@ function TrashIcon() {
 export function TaskRow({
   task,
   today,
+  recurrence,
   onToggle,
   onOpen,
   onStatusChange,
+  onStartTimer,
+  onStopTimer,
   onDelete,
   onTagClick,
 }: TaskRowProps) {
   const isDone = task.status === "done";
   const due = task.dueDate ? describeDue(task.dueDate, today, isDone) : null;
+  const over = task.estimateMinutes !== null && task.actualMinutes !== null;
 
   return (
     <li
@@ -100,7 +109,16 @@ export function TaskRow({
             </span>
           )}
           {(task.estimateMinutes !== null || task.actualMinutes !== null) && (
-            <span className="text-ink-muted tabular-nums">
+            <span
+              className={cn(
+                "tabular-nums",
+                over
+                  ? task.actualMinutes! > task.estimateMinutes!
+                    ? "text-danger font-medium"
+                    : "text-success font-medium"
+                  : "text-ink-muted",
+              )}
+            >
               {task.estimateMinutes !== null &&
                 `Est. ${formatMinutes(task.estimateMinutes)}`}
               {task.estimateMinutes !== null &&
@@ -108,11 +126,16 @@ export function TaskRow({
                 " · "}
               {task.actualMinutes !== null &&
                 `Spent ${formatMinutes(task.actualMinutes)}`}
+              {over && (
+                <span aria-hidden="true">
+                  {task.actualMinutes! > task.estimateMinutes! ? " ▲" : " ▼"}
+                </span>
+              )}
             </span>
           )}
-          {task.isRecurring && task.recurrence !== "none" && (
+          {recurrence && (
             <span className="text-ink-muted">
-              Repeats: {RECURRENCE_LABELS[task.recurrence].toLowerCase()}
+              Repeats: {RECURRENCE_LABELS[recurrence].toLowerCase()}
             </span>
           )}
           {task.tags.map((tag) => (
@@ -130,6 +153,14 @@ export function TaskRow({
       </div>
 
       <div className="flex shrink-0 items-center gap-1">
+        {!isDone && (
+          <TaskTimer
+            title={task.title}
+            startedAt={task.timerStartedAt}
+            onStart={() => onStartTimer(task)}
+            onStop={() => onStopTimer(task)}
+          />
+        )}
         {task.status === "todo" && (
           <Button
             variant="ghost"

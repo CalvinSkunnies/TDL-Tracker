@@ -1,5 +1,5 @@
 import { parseDateString } from "@/lib/tasks";
-import type { TaskPriority, TaskRecurrence, TaskStatus } from "@/lib/types";
+import type { Recurrence, TaskPriority, TaskStatus } from "@/lib/types";
 
 export const STATUS_LABELS: Record<TaskStatus, string> = {
   todo: "To do",
@@ -13,10 +13,7 @@ export const PRIORITY_LABELS: Record<TaskPriority, string> = {
   high: "High",
 };
 
-export const RECURRENCE_LABELS: Record<
-  Exclude<TaskRecurrence, "none">,
-  string
-> = {
+export const RECURRENCE_LABELS: Record<Recurrence, string> = {
   daily: "Every day",
   weekdays: "Every weekday",
 };

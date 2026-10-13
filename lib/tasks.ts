@@ -1,13 +1,17 @@
 import {
+  RECURRENCES,
   TASK_PRIORITIES,
-  TASK_RECURRENCES,
   TASK_STATUSES,
   type NewTask,
+  type NewTemplate,
+  type Recurrence,
+  type Settings,
   type Task,
   type TaskFilters,
   type TaskPatch,
-  type TaskRecurrence,
   type TaskStatus,
+  type TaskTemplate,
+  type TemplatePatch,
 } from "./types";
 
 /* ------------------------------------------------------------------ */
@@ -17,6 +21,9 @@ import {
 export const MAX_TITLE_LENGTH = 200;
 export const MAX_TAG_LENGTH = 30;
 export const MAX_MINUTES = 60 * 24 * 365;
+
+/** Default daily focus target, in hours. */
+export const DEFAULT_CAPACITY_HOURS = 6;
 
 export function newId(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -50,7 +57,7 @@ function minutesOrNull(value: unknown): number | null {
 
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
 
-function dueDateOrNull(value: unknown): string | null {
+function dateOnlyOrNull(value: unknown): string | null {
   return typeof value === "string" && DATE_ONLY.test(value) ? value : null;
 }
 
@@ -88,47 +95,16 @@ export function parseDateString(value: string): Date {
   return new Date(y, m - 1, d);
 }
 
-/**
- * The next due date for a recurring task that was just completed: the first
- * matching day after whichever is later, the old due date or today. Finishing
- * an overdue task never produces another overdue one.
- */
-export function nextDueDate(
-  recurrence: TaskRecurrence,
-  currentDue: string | null,
-  today: string,
-): string | null {
-  if (recurrence === "none") return null;
-  const anchor = currentDue && currentDue > today ? currentDue : today;
-  const next = parseDateString(anchor);
-  do {
-    next.setDate(next.getDate() + 1);
-  } while (
-    recurrence === "weekdays" &&
-    (next.getDay() === 0 || next.getDay() === 6)
-  );
-  return toDateString(next);
+/** Whether a series falls on a given calendar day (weekends skipped for weekdays). */
+export function fallsOn(recurrence: Recurrence, date: string): boolean {
+  if (recurrence === "daily") return true;
+  const day = parseDateString(date).getDay();
+  return day !== 0 && day !== 6;
 }
 
 /* ------------------------------------------------------------------ */
-/* Creating, normalizing and patching tasks                             */
+/* Creating, normalizing and patching tasks (instances)                 */
 /* ------------------------------------------------------------------ */
-
-/** isRecurring and recurrence must never disagree. */
-function resolveRecurrence(
-  current: Pick<Task, "isRecurring" | "recurrence">,
-  patch: Pick<TaskPatch, "isRecurring" | "recurrence">,
-): Pick<Task, "isRecurring" | "recurrence"> {
-  let recurrence = patch.recurrence ?? current.recurrence;
-  let isRecurring = patch.isRecurring ?? current.isRecurring;
-
-  if (patch.isRecurring === false) recurrence = "none";
-  else if (patch.recurrence && patch.recurrence !== "none") isRecurring = true;
-
-  if (isRecurring && recurrence === "none") recurrence = "daily";
-  if (!isRecurring) recurrence = "none";
-  return { isRecurring, recurrence };
-}
 
 /** Builds a complete task; returns null when the title is empty. */
 export function createTask(input: NewTask, now = new Date()): Task | null {
@@ -137,10 +113,6 @@ export function createTask(input: NewTask, now = new Date()): Task | null {
 
   const stamp = now.toISOString();
   const status = oneOf(TASK_STATUSES, input.status, "todo");
-  const recurrence = resolveRecurrence(
-    { isRecurring: false, recurrence: "none" },
-    { isRecurring: input.isRecurring, recurrence: input.recurrence },
-  );
 
   return {
     id: newId(),
@@ -150,16 +122,18 @@ export function createTask(input: NewTask, now = new Date()): Task | null {
     createdAt: stamp,
     updatedAt: stamp,
     completedAt: status === "done" ? stamp : null,
-    dueDate: dueDateOrNull(input.dueDate),
+    dueDate: dateOnlyOrNull(input.dueDate),
     priority: oneOf(TASK_PRIORITIES, input.priority, "medium"),
     tags: normalizeTags(input.tags ?? []),
     estimateMinutes: minutesOrNull(input.estimateMinutes),
     actualMinutes: minutesOrNull(input.actualMinutes),
-    ...recurrence,
+    timerStartedAt: null,
+    seriesId: typeof input.seriesId === "string" ? input.seriesId : null,
+    instanceDate: dateOnlyOrNull(input.instanceDate),
   };
 }
 
-/** Applies a patch, keeping completedAt, recurrence and updatedAt consistent. */
+/** Applies a patch, keeping completedAt and updatedAt consistent. */
 export function applyPatch(
   task: Task,
   patch: TaskPatch,
@@ -180,7 +154,7 @@ export function applyPatch(
         : status === "done"
           ? stamp
           : null,
-    dueDate: "dueDate" in patch ? dueDateOrNull(patch.dueDate) : task.dueDate,
+    dueDate: "dueDate" in patch ? dateOnlyOrNull(patch.dueDate) : task.dueDate,
     priority: oneOf(TASK_PRIORITIES, patch.priority, task.priority),
     tags: patch.tags ? normalizeTags(patch.tags) : task.tags,
     estimateMinutes:
@@ -191,7 +165,6 @@ export function applyPatch(
       "actualMinutes" in patch
         ? minutesOrNull(patch.actualMinutes)
         : task.actualMinutes,
-    ...resolveRecurrence(task, patch),
     updatedAt: stamp,
   };
 }
@@ -210,7 +183,6 @@ export function normalizeTask(raw: unknown): Task | null {
   const now = new Date().toISOString();
   const createdAt = isoOr(r.createdAt, now);
   const status = oneOf(TASK_STATUSES, r.status, "todo");
-  const recurrence = oneOf(TASK_RECURRENCES, r.recurrence, "none");
 
   return {
     id: r.id,
@@ -221,13 +193,155 @@ export function normalizeTask(raw: unknown): Task | null {
     updatedAt: isoOr(r.updatedAt, createdAt),
     completedAt:
       status === "done" ? isoOr(r.completedAt, isoOr(r.updatedAt, now)) : null,
-    dueDate: dueDateOrNull(r.dueDate),
+    dueDate: dateOnlyOrNull(r.dueDate),
     priority: oneOf(TASK_PRIORITIES, r.priority, "medium"),
     tags: Array.isArray(r.tags) ? normalizeTags(r.tags) : [],
     estimateMinutes: minutesOrNull(r.estimateMinutes),
     actualMinutes: minutesOrNull(r.actualMinutes),
-    isRecurring: recurrence !== "none",
-    recurrence,
+    timerStartedAt:
+      typeof r.timerStartedAt === "string" &&
+      !Number.isNaN(Date.parse(r.timerStartedAt))
+        ? r.timerStartedAt
+        : null,
+    seriesId: typeof r.seriesId === "string" && r.seriesId ? r.seriesId : null,
+    instanceDate: dateOnlyOrNull(r.instanceDate),
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/* Creating, normalizing and patching series (templates)                */
+/* ------------------------------------------------------------------ */
+
+/** Builds a series; returns null when the title is empty. */
+export function createTemplate(
+  input: NewTemplate,
+  now = new Date(),
+): TaskTemplate | null {
+  const title = input.title.trim().slice(0, MAX_TITLE_LENGTH);
+  if (!title) return null;
+
+  const stamp = now.toISOString();
+  return {
+    id: newId(),
+    title,
+    notes: input.notes ?? "",
+    priority: oneOf(TASK_PRIORITIES, input.priority, "medium"),
+    tags: normalizeTags(input.tags ?? []),
+    estimateMinutes: minutesOrNull(input.estimateMinutes),
+    recurrence: oneOf(RECURRENCES, input.recurrence, "daily"),
+    active: typeof input.active === "boolean" ? input.active : true,
+    createdAt: stamp,
+    updatedAt: stamp,
+  };
+}
+
+export function applyTemplatePatch(
+  template: TaskTemplate,
+  patch: TemplatePatch,
+  now = new Date(),
+): TaskTemplate {
+  const title = patch.title?.trim().slice(0, MAX_TITLE_LENGTH);
+
+  return {
+    ...template,
+    title: title ? title : template.title,
+    notes: patch.notes ?? template.notes,
+    priority: oneOf(TASK_PRIORITIES, patch.priority, template.priority),
+    tags: patch.tags ? normalizeTags(patch.tags) : template.tags,
+    estimateMinutes:
+      "estimateMinutes" in patch
+        ? minutesOrNull(patch.estimateMinutes)
+        : template.estimateMinutes,
+    recurrence: oneOf(RECURRENCES, patch.recurrence, template.recurrence),
+    active: typeof patch.active === "boolean" ? patch.active : template.active,
+    updatedAt: now.toISOString(),
+  };
+}
+
+/** Coerces untrusted data into a valid series, or null when unusable. */
+export function normalizeTemplate(raw: unknown): TaskTemplate | null {
+  if (typeof raw !== "object" || raw === null) return null;
+  const r = raw as Record<string, unknown>;
+  if (typeof r.title !== "string" || !r.title.trim()) return null;
+
+  const now = new Date().toISOString();
+  return {
+    id: typeof r.id === "string" && r.id ? r.id : newId(),
+    title: r.title.trim().slice(0, MAX_TITLE_LENGTH),
+    notes: typeof r.notes === "string" ? r.notes : "",
+    priority: oneOf(TASK_PRIORITIES, r.priority, "medium"),
+    tags: Array.isArray(r.tags) ? normalizeTags(r.tags) : [],
+    estimateMinutes: minutesOrNull(r.estimateMinutes),
+    recurrence: oneOf(RECURRENCES, r.recurrence, "daily"),
+    active: typeof r.active === "boolean" ? r.active : true,
+    createdAt: isoOr(r.createdAt, now),
+    updatedAt: isoOr(r.updatedAt, now),
+  };
+}
+
+/** The definition fields a series shares with its instances. */
+export function templateFieldsFromTask(
+  task: Task,
+): Pick<
+  TaskTemplate,
+  "title" | "notes" | "priority" | "tags" | "estimateMinutes"
+> {
+  return {
+    title: task.title,
+    notes: task.notes,
+    priority: task.priority,
+    tags: task.tags,
+    estimateMinutes: task.estimateMinutes,
+  };
+}
+
+/** Builds a fresh instance for a series on a given day. */
+export function buildInstanceFromTemplate(
+  template: TaskTemplate,
+  date: string,
+  now = new Date(),
+): Task | null {
+  return createTask(
+    {
+      title: template.title,
+      notes: template.notes,
+      priority: template.priority,
+      tags: template.tags,
+      estimateMinutes: template.estimateMinutes,
+      dueDate: date,
+      seriesId: template.id,
+      instanceDate: date,
+    },
+    now,
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Journal & settings                                                   */
+/* ------------------------------------------------------------------ */
+
+export function normalizeJournal(raw: unknown): Record<string, string> {
+  if (typeof raw !== "object" || raw === null) return {};
+  const entries: Record<string, string> = {};
+  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+    if (DATE_ONLY.test(key) && typeof value === "string" && value.trim()) {
+      entries[key] = value;
+    }
+  }
+  return entries;
+}
+
+export function normalizeSettings(raw: unknown): Settings {
+  const r = (
+    typeof raw === "object" && raw !== null ? raw : {}
+  ) as Record<string, unknown>;
+  const hours =
+    typeof r.dailyCapacityHours === "number" &&
+    Number.isFinite(r.dailyCapacityHours)
+      ? r.dailyCapacityHours
+      : DEFAULT_CAPACITY_HOURS;
+  return {
+    dailyCapacityHours: Math.min(24, Math.max(1, Math.round(hours))),
   };
 }
 

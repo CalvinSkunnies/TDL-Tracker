@@ -9,15 +9,18 @@ import {
   Select,
   Textarea,
 } from "@/components/ui";
+import type { SaveOptions } from "@/lib/store";
 import { parseTagInput } from "@/lib/tasks";
 import {
+  RECURRENCES,
   TASK_PRIORITIES,
   TASK_STATUSES,
+  type Recurrence,
   type Task,
   type TaskPatch,
   type TaskPriority,
-  type TaskRecurrence,
   type TaskStatus,
+  type TaskTemplate,
 } from "@/lib/types";
 import {
   PRIORITY_LABELS,
@@ -26,21 +29,37 @@ import {
   formatTimestamp,
 } from "./labels";
 
+export type SaveScope = "this" | "future";
+
 interface TaskEditorProps {
   /** The task being edited, or null when the dialog is closed. */
   task: Task | null;
-  onSave: (id: string, patch: TaskPatch) => void;
-  onDelete: (task: Task) => void;
+  /** The series backing this task, or null when it is a one-off. */
+  template: TaskTemplate | null;
+  onSave: (id: string, patch: TaskPatch, options: SaveOptions) => void;
+  onDelete: (task: Task, scope: SaveScope) => void;
   onClose: () => void;
 }
 
 export function TaskEditor({
   task,
+  template,
   onSave,
   onDelete,
   onClose,
 }: TaskEditorProps) {
   const formId = useId();
+  const [scopeState, setScopeState] = useState<{
+    id: string | null;
+    scope: SaveScope;
+  }>({ id: task?.id ?? null, scope: "this" });
+
+  // Reset the scope back to "this task" whenever a different task is opened.
+  if ((task?.id ?? null) !== scopeState.id) {
+    setScopeState({ id: task?.id ?? null, scope: "this" });
+  }
+  const scope = scopeState.scope;
+  const setScope = (next: SaveScope) => setScopeState({ id: task?.id ?? null, scope: next });
 
   return (
     <Modal
@@ -60,7 +79,7 @@ export function TaskEditor({
       footer={
         task && (
           <div className="flex w-full items-center justify-between gap-2">
-            <Button variant="danger" onClick={() => onDelete(task)}>
+            <Button variant="danger" onClick={() => onDelete(task, scope)}>
               Delete
             </Button>
             <div className="flex gap-2">
@@ -81,7 +100,10 @@ export function TaskEditor({
           key={task.id}
           formId={formId}
           task={task}
-          onSubmit={(patch) => onSave(task.id, patch)}
+          template={template}
+          scope={scope}
+          onScopeChange={setScope}
+          onSubmit={(patch, options) => onSave(task.id, patch, options)}
         />
       )}
     </Modal>
@@ -101,11 +123,17 @@ function fieldToMinutes(value: string): number | null {
 function EditorForm({
   formId,
   task,
+  template,
+  scope,
+  onScopeChange,
   onSubmit,
 }: {
   formId: string;
   task: Task;
-  onSubmit: (patch: TaskPatch) => void;
+  template: TaskTemplate | null;
+  scope: SaveScope;
+  onScopeChange: (scope: SaveScope) => void;
+  onSubmit: (patch: TaskPatch, options: SaveOptions) => void;
 }) {
   const [title, setTitle] = useState(task.title);
   const [notes, setNotes] = useState(task.notes);
@@ -117,9 +145,9 @@ function EditorForm({
     minutesToField(task.estimateMinutes),
   );
   const [actual, setActual] = useState(minutesToField(task.actualMinutes));
-  const [repeats, setRepeats] = useState(task.isRecurring);
-  const [recurrence, setRecurrence] = useState<TaskRecurrence>(
-    task.recurrence === "none" ? "daily" : task.recurrence,
+  const [repeats, setRepeats] = useState(template !== null);
+  const [recurrence, setRecurrence] = useState<Recurrence>(
+    template?.recurrence ?? "daily",
   );
   const [titleError, setTitleError] = useState<string | null>(null);
 
@@ -129,18 +157,19 @@ function EditorForm({
       setTitleError("Give the task a title.");
       return;
     }
-    onSubmit({
-      title,
-      notes,
-      status,
-      priority,
-      dueDate: dueDate || null,
-      tags: parseTagInput(tags),
-      estimateMinutes: fieldToMinutes(estimate),
-      actualMinutes: fieldToMinutes(actual),
-      isRecurring: repeats,
-      recurrence: repeats ? recurrence : "none",
-    });
+    onSubmit(
+      {
+        title,
+        notes,
+        status,
+        priority,
+        dueDate: dueDate || null,
+        tags: parseTagInput(tags),
+        estimateMinutes: fieldToMinutes(estimate),
+        actualMinutes: fieldToMinutes(actual),
+      },
+      { recurrence: { enabled: repeats, rule: recurrence }, scope },
+    );
   }
 
   return (
@@ -230,7 +259,7 @@ function EditorForm({
       <div className="flex flex-col gap-3 sm:col-span-2 sm:flex-row sm:items-start sm:justify-between">
         <Checkbox
           label="Repeats"
-          description="A new copy is scheduled when you finish it."
+          description="A fresh copy appears each day it is due."
           checked={repeats}
           onChange={(event) => setRepeats(event.target.checked)}
         />
@@ -239,15 +268,11 @@ function EditorForm({
             aria-label="Repeat schedule"
             value={recurrence}
             onChange={(event) =>
-              setRecurrence(event.target.value as TaskRecurrence)
+              setRecurrence(event.target.value as Recurrence)
             }
             wrapperClassName="sm:w-44"
           >
-            {(
-              Object.keys(
-                RECURRENCE_LABELS,
-              ) as (keyof typeof RECURRENCE_LABELS)[]
-            ).map((value) => (
+            {RECURRENCES.map((value) => (
               <option key={value} value={value}>
                 {RECURRENCE_LABELS[value]}
               </option>
@@ -255,6 +280,37 @@ function EditorForm({
           </Select>
         )}
       </div>
+
+      {template && (
+        <fieldset className="border-line rounded-xl border p-3 sm:col-span-2">
+          <legend className="text-ink px-1 text-sm font-medium">
+            Apply changes to
+          </legend>
+          <div className="flex flex-wrap gap-x-6 gap-y-2 pt-1">
+            {(
+              [
+                ["this", "This task only"],
+                ["future", "This and all future"],
+              ] as const
+            ).map(([value, label]) => (
+              <label
+                key={value}
+                className="text-ink-soft flex cursor-pointer items-center gap-2 text-sm"
+              >
+                <input
+                  type="radio"
+                  name="scope"
+                  value={value}
+                  checked={scope === value}
+                  onChange={() => onScopeChange(value)}
+                  className="accent-clay-500 size-4"
+                />
+                {label}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      )}
     </form>
   );
 }

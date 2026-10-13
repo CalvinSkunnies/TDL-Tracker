@@ -1,15 +1,19 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { SaveOptions } from "@/lib/store";
 import { useTasks } from "@/lib/use-tasks";
 import { useToday } from "@/lib/use-today";
 import type { Task, TaskPatch, TaskStatus } from "@/lib/types";
+import { CapacityView } from "./capacity-view";
+import { DataControls } from "./data-controls";
 import { DeleteDialog } from "./delete-dialog";
 import { FilterBar } from "./filter-bar";
+import { Journal } from "./journal";
 import { STATUS_LABELS } from "./labels";
 import { QuickAdd } from "./quick-add";
 import { EmptyState, LoadingState, NoResultsState } from "./states";
-import { TaskEditor } from "./task-editor";
+import { TaskEditor, type SaveScope } from "./task-editor";
 import { TaskRow } from "./task-row";
 
 const GROUP_ORDER: TaskStatus[] = ["todo", "in-progress", "done"];
@@ -34,12 +38,22 @@ function isTypingTarget(target: EventTarget | null): boolean {
 export function TasksApp() {
   const {
     tasks,
+    journal,
+    settings,
     isLoading,
     storageProblem,
     addTask,
-    updateTask,
+    saveTask,
     deleteTask,
+    deleteSeries,
     toggleStatus,
+    startTimer,
+    stopTimer,
+    setDailyCapacityHours,
+    setJournalEntry,
+    exportData,
+    importData,
+    getTemplate,
     filters,
     setFilters,
     resetFilters,
@@ -69,7 +83,20 @@ export function TasksApp() {
   const searchRef = useRef<HTMLInputElement>(null);
 
   const editing = tasks.find((task) => task.id === editingId) ?? null;
+  const editingTemplate = editing ? getTemplate(editing.seriesId) : null;
   const openCount = counts.todo + counts["in-progress"];
+
+  /** Estimate minutes for today's open work, for the capacity meter. */
+  const plannedMinutes = useMemo(
+    () =>
+      tasks.reduce((sum, task) => {
+        if (task.status === "done") return sum;
+        const day = task.instanceDate ?? task.dueDate;
+        if (day !== today) return sum;
+        return sum + (task.estimateMinutes ?? 0);
+      }, 0),
+    [tasks, today],
+  );
 
   useEffect(() => {
     const pending = pendingFocus.current;
@@ -125,22 +152,31 @@ export function TasksApp() {
   }
 
   function handleStatusChange(task: Task, status: TaskStatus) {
-    updateTask(task.id, { status });
+    saveTask(task.id, { status });
     pendingFocus.current = { id: task.id, target: "status" };
     setAnnouncement(`Moved “${task.title}” to ${STATUS_LABELS[status]}.`);
   }
 
-  function handleSave(id: string, patch: TaskPatch) {
-    updateTask(id, patch);
+  function handleSave(id: string, patch: TaskPatch, options: SaveOptions) {
+    saveTask(id, patch, options);
     pendingFocus.current = { id, target: "open" };
     setEditingId(null);
     setAnnouncement("Task saved.");
   }
 
-  function handleConfirmDelete(task: Task) {
-    deleteTask(task.id);
+  function handleConfirmDelete(task: Task, scope: SaveScope) {
+    const stopsSeries = scope === "future" && task.seriesId !== null;
+    if (stopsSeries) {
+      deleteSeries(task.id);
+    } else {
+      deleteTask(task.id);
+    }
     setDeleting(null);
-    setAnnouncement(`Deleted “${task.title}”.`);
+    setAnnouncement(
+      stopsSeries
+        ? `Deleted “${task.title}” and stopped the series.`
+        : `Deleted “${task.title}”.`,
+    );
     focusQuickAddSoon();
   }
 
@@ -153,17 +189,26 @@ export function TasksApp() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <header className="mb-8">
-        <h1 className="font-display text-4xl font-medium tracking-tight sm:text-5xl">
-          Your tasks
-        </h1>
-        <p className="text-ink-muted mt-2 text-base" aria-live="off">
-          {isLoading
-            ? " "
-            : tasks.length === 0
-              ? "Nothing here yet."
-              : `${openCount} open · ${counts.done} done`}
-        </p>
+      <header className="mb-8 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="font-display text-4xl font-medium tracking-tight sm:text-5xl">
+            Your tasks
+          </h1>
+          <p className="text-ink-muted mt-2 text-base" aria-live="off">
+            {isLoading
+              ? " "
+              : tasks.length === 0
+                ? "Nothing here yet."
+                : `${openCount} open · ${counts.done} done`}
+          </p>
+        </div>
+        {!isLoading && (
+          <DataControls
+            today={today}
+            onExport={exportData}
+            onImport={importData}
+          />
+        )}
       </header>
 
       {storageProblem && (
@@ -173,6 +218,16 @@ export function TasksApp() {
         >
           {STORAGE_MESSAGES[storageProblem]}
         </p>
+      )}
+
+      {!isLoading && (
+        <div className="mb-8">
+          <CapacityView
+            plannedMinutes={plannedMinutes}
+            capacityHours={settings.dailyCapacityHours}
+            onCapacityChange={setDailyCapacityHours}
+          />
+        </div>
       )}
 
       <QuickAdd onAdd={handleAdd} disabled={isLoading} inputRef={quickAddRef} />
@@ -224,9 +279,16 @@ export function TasksApp() {
                         key={task.id}
                         task={task}
                         today={today}
+                        recurrence={
+                          task.seriesId
+                            ? (getTemplate(task.seriesId)?.recurrence ?? null)
+                            : null
+                        }
                         onToggle={handleToggle}
                         onOpen={(t) => setEditingId(t.id)}
                         onStatusChange={handleStatusChange}
+                        onStartTimer={(t) => startTimer(t.id)}
+                        onStopTimer={(t) => stopTimer(t.id)}
                         onDelete={requestDelete}
                         onTagClick={(tag) => setFilters({ tag })}
                       />
@@ -239,8 +301,15 @@ export function TasksApp() {
         )}
       </div>
 
+      {!isLoading && (
+        <div className="mt-12">
+          <Journal today={today} entries={journal} onChange={setJournalEntry} />
+        </div>
+      )}
+
       <TaskEditor
         task={editing}
+        template={editingTemplate}
         onSave={handleSave}
         onDelete={requestDelete}
         onClose={() => setEditingId(null)}

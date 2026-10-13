@@ -1,6 +1,12 @@
 "use client";
 
-import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import * as store from "./store";
 import {
   DEFAULT_FILTERS,
@@ -9,16 +15,20 @@ import {
   groupTasks,
   matchesQuery,
 } from "./tasks";
+import { useToday } from "./use-today";
 import {
   TASK_STATUSES,
   type NewTask,
+  type Recurrence,
   type Task,
   type TaskFilters,
   type TaskPatch,
   type TaskStatus,
+  type TaskTemplate,
 } from "./types";
 
 const NO_TASKS: Task[] = [];
+const NO_TEMPLATES: TaskTemplate[] = [];
 
 /**
  * All task state and actions for the UI.
@@ -32,10 +42,32 @@ export function useTasks() {
     store.getSnapshot,
     store.getServerSnapshot,
   );
+  const today = useToday();
   const [filters, setFilters] = useState<TaskFilters>(DEFAULT_FILTERS);
 
   const isLoading = snapshot === null;
   const tasks = snapshot?.tasks ?? NO_TASKS;
+  const templates = snapshot?.templates ?? NO_TEMPLATES;
+  const journal = snapshot?.journal ?? {};
+  const settings = snapshot?.settings ?? { dailyCapacityHours: 6 };
+
+  const templateById = useMemo(() => {
+    const map = new Map<string, TaskTemplate>();
+    for (const template of templates) map.set(template.id, template);
+    return map;
+  }, [templates]);
+
+  const getTemplate = useCallback(
+    (id: string | null): TaskTemplate | null =>
+      id ? (templateById.get(id) ?? null) : null,
+    [templateById],
+  );
+
+  // Keep today's series instances in sync (idempotent; runs at most once/day).
+  useEffect(() => {
+    if (isLoading) return;
+    store.generateToday();
+  }, [isLoading, today]);
 
   const allTags = useMemo(() => collectTags(tasks), [tasks]);
 
@@ -85,14 +117,30 @@ export function useTasks() {
 
   return {
     tasks,
+    templates,
+    journal,
+    settings,
     isLoading,
     /** Set when localStorage is unavailable, unreadable or full. */
     storageProblem: snapshot?.problem ?? null,
 
     addTask: (input: NewTask) => store.addTask(input),
-    updateTask: (id: string, patch: TaskPatch) => store.updateTask(id, patch),
+    saveTask: (id: string, patch: TaskPatch, options?: store.SaveOptions) =>
+      store.saveTask(id, patch, options),
     deleteTask: (id: string) => store.deleteTask(id),
+    deleteSeries: (id: string) => store.deleteSeries(id),
     toggleStatus: (id: string) => store.toggleStatus(id),
+    startTimer: (id: string) => store.startTimer(id),
+    stopTimer: (id: string) => store.stopTimer(id),
+
+    setDailyCapacityHours: (hours: number) =>
+      store.setDailyCapacityHours(hours),
+    setJournalEntry: (date: string, text: string) =>
+      store.setJournalEntry(date, text),
+    exportData: () => store.exportData(),
+    importData: (text: string) => store.importData(text),
+
+    getTemplate,
 
     filters: effectiveFilters,
     setFilters: updateFilters,
@@ -108,3 +156,5 @@ export function useTasks() {
 }
 
 export type UseTasks = ReturnType<typeof useTasks>;
+
+export type { Recurrence };
