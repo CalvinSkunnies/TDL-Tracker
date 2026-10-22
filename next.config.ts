@@ -61,7 +61,15 @@ const nextConfig: NextConfig = {
     },
   },
   async headers() {
-    return [{ source: "/:path*", headers: securityHeaders }];
+    return [
+      { source: "/:path*", headers: securityHeaders },
+      {
+        // Allow a service worker served at the domain root to control /tdl only,
+        // which is what happens when the portfolio proxies the tracker in.
+        source: "/sw.js",
+        headers: [{ key: "Service-Worker-Allowed", value: "/tdl/" }],
+      },
+    ];
   },
   async redirects() {
     return [

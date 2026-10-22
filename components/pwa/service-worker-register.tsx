@@ -13,10 +13,12 @@ export function ServiceWorkerRegister() {
       return;
     }
     const register = () => {
-      navigator.serviceWorker.register("/sw.js").catch(() => {
-        // Registration can fail on unsupported or sandboxed hosts; the app
-        // still works, just without offline caching.
-      });
+      navigator.serviceWorker
+        .register("/sw.js", { scope: "/tdl/" })
+        .catch(() => {
+          // Registration can fail on unsupported or sandboxed hosts; the app
+          // still works, just without offline caching.
+        });
     };
     if (document.readyState === "complete") {
       register();

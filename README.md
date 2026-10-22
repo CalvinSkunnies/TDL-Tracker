@@ -171,10 +171,12 @@ The tracker occupies `/tdl/*`:
 | `/tdl/login` | Passphrase form |
 | `/tdl/design-system` | UI primitives reference (behind the gate) |
 
-Because the tracker no longer owns the domain root, the portfolio deployment can
-be retired: point the `calvinskunnies.vercel.app` project (or your custom
-domain) at this Next.js project instead. The old tracker deployment URL still
-works at `/tdl/tracker` until it is deleted.
+**Keeping the portfolio project.** The static portfolio can stay the entry point
+on `calvinskunnies.vercel.app`; its `vercel.json` proxies the tracker in with
+external rewrites (`/tdl/*`, `/_next/*`, and the PWA files), so the browser stays
+on the portfolio domain and the session cookie is stored there. The tracker
+deployment (`calvinskunniestdl.vercel.app`) keeps serving the same app directly.
+Alternatively, move the domain to this project and retire the static deploy.
 
 You **cannot** create subdomains of `*.vercel.app` — Vercel owns that domain. A
 name like `todo.yourdomain.com` requires owning a custom domain.
@@ -279,10 +281,15 @@ After the first deploy:
   Locally, put the same two lines in `.env.local`.
 - Environment variables can be changed later under **Project Settings >
   Environment Variables**; redeploy for changes to take effect.
-- **Moving `calvinskunnies.vercel.app`:** in the old portfolio project, open
-  **Settings > Domains**, remove the domain, then add it to this project. The
-  portfolio is now served from this project's `/`, so the old static deployment
-  can be deleted once the domain resolves here.
+- **Option 1 — keep the portfolio project (multi-zone):** add the `vercel.json`
+  from the portfolio repo (it proxies `/tdl/*`, `/_next/*`, `/sw.js`,
+  `/offline.html`, `/manifest.webmanifest`, and `/icon.svg` to
+  `https://calvinskunniestdl.vercel.app`), commit and redeploy the portfolio. No
+  domain change is needed; `calvinskunnies.vercel.app/tdl/tracker` then serves
+  this deployment.
+- **Option 2 — move the domain:** remove `calvinskunnies.vercel.app` from the
+  portfolio project's **Settings > Domains**, add it to this project instead,
+  and delete the old static deployment once it resolves here.
 
 ### Manual checklist (things only you can do)
 

@@ -11,6 +11,22 @@ import { SESSION_COOKIE, verifySessionToken } from "@/lib/session";
 const LOGIN_PATH = "/tdl/login";
 const HOME_PATH = "/tdl/tracker";
 
+/**
+ * The browser's host. Behind the portfolio's Vercel rewrite the tracker runs on
+ * its own deployment, but `x-forwarded-host` still names the domain the visitor
+ * typed, so redirects and cookies stay on that domain.
+ */
+function requestOrigin(request: NextRequest): string {
+  const host =
+    request.headers.get("x-forwarded-host") ?? request.headers.get("host");
+  const proto = request.headers.get("x-forwarded-proto") ?? "https";
+  return `${proto}://${host}`;
+}
+
+function redirectTo(request: NextRequest, location: string) {
+  return NextResponse.redirect(new URL(location, requestOrigin(request)));
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
   const authed = await verifySessionToken(
@@ -19,16 +35,14 @@ export async function proxy(request: NextRequest) {
 
   if (pathname === LOGIN_PATH) {
     // Already signed in: go straight to the tracker.
-    return authed
-      ? NextResponse.redirect(new URL(HOME_PATH, request.url))
-      : NextResponse.next();
+    return authed ? redirectTo(request, HOME_PATH) : NextResponse.next();
   }
 
   if (authed) return NextResponse.next();
 
-  const loginUrl = new URL(LOGIN_PATH, request.url);
-  if (pathname !== "/tdl") loginUrl.searchParams.set("next", pathname + search);
-  return NextResponse.redirect(loginUrl);
+  if (pathname === "/tdl") return redirectTo(request, LOGIN_PATH);
+  const next = encodeURIComponent(pathname + search);
+  return redirectTo(request, `${LOGIN_PATH}?next=${next}`);
 }
 
 export const config = {
