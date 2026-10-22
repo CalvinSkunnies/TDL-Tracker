@@ -38,9 +38,24 @@ function signingKey(): Uint8Array | null {
   return new TextEncoder().encode(`${secret}\u0000${passphrase}`);
 }
 
+/**
+ * Why sign-in is unavailable, for server logs only. Never expose this to the
+ * client: it names configuration state, not secrets.
+ */
+export function authConfigProblem(): string {
+  const secret = process.env.AUTH_SECRET;
+  const passphrase = process.env.APP_PASSPHRASE;
+  if (!secret) return "AUTH_SECRET is not set";
+  if (secret.length < 32) {
+    return `AUTH_SECRET is too short (${secret.length} chars, need 32+)`;
+  }
+  if (!passphrase) return "APP_PASSPHRASE is not set";
+  return "ok";
+}
+
 /** False when env vars are missing or weak. Callers must fail closed. */
 export function isAuthConfigured(): boolean {
-  return signingKey() !== null;
+  return authConfigProblem() === "ok";
 }
 
 export async function createSessionToken(): Promise<string> {

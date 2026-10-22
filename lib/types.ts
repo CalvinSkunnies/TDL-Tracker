@@ -24,6 +24,8 @@ export interface Task {
   completedAt: string | null;
   /** Calendar date in the user's local time, "YYYY-MM-DD". */
   dueDate: string | null;
+  /** Calendar date work is planned to start, "YYYY-MM-DD", or null. */
+  startDate: string | null;
   priority: TaskPriority;
   /** Lowercase, trimmed, de-duplicated. */
   tags: string[];
@@ -63,6 +65,7 @@ export type NewTask = Partial<
     | "notes"
     | "status"
     | "dueDate"
+    | "startDate"
     | "priority"
     | "tags"
     | "estimateMinutes"
@@ -81,6 +84,7 @@ export type TaskPatch = Partial<
     | "notes"
     | "status"
     | "dueDate"
+    | "startDate"
     | "priority"
     | "tags"
     | "estimateMinutes"

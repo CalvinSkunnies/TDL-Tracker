@@ -5,12 +5,14 @@ import { Button, Input } from "@/components/ui";
 
 interface QuickAddProps {
   onAdd: (title: string) => boolean;
+  /** Opens the full form, carrying over whatever was typed. */
+  onDetails?: (title: string) => void;
   disabled?: boolean;
   inputRef?: Ref<HTMLInputElement>;
 }
 
-/** Type a title, press Enter. Everything else is edited in the detail dialog. */
-export function QuickAdd({ onAdd, disabled, inputRef }: QuickAddProps) {
+/** Type a title, press Enter. Use "Details" for dates and a description. */
+export function QuickAdd({ onAdd, onDetails, disabled, inputRef }: QuickAddProps) {
   const [title, setTitle] = useState("");
 
   function submit(event: React.FormEvent) {
@@ -39,6 +41,18 @@ export function QuickAdd({ onAdd, disabled, inputRef }: QuickAddProps) {
       >
         Add
       </Button>
+      {onDetails && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="lg"
+          disabled={disabled}
+          onClick={() => onDetails(title)}
+          className="shrink-0"
+        >
+          Details
+        </Button>
+      )}
     </form>
   );
 }

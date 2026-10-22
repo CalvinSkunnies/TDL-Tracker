@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { logout } from "@/app/login/actions";
 import { cn } from "@/lib/cn";
+import { NotepadMark } from "./notepad-mark";
 import { ThemeToggle } from "./theme-toggle";
 
 const links = [
@@ -41,9 +42,15 @@ export function SiteNav() {
       >
         <Link
           href="/tracker"
-          className="font-display text-ink hover:text-clay-700 focus-visible:outline-clay-500 text-xl font-medium tracking-tight transition-colors focus-visible:rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4"
+          aria-label="Notepad — your tasks"
+          className="text-ink hover:text-clay-700 focus-visible:outline-clay-500 flex items-center gap-2.5 transition-colors focus-visible:rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4"
         >
-          web-app
+          <span className="bg-clay-100 text-clay-700 grid size-9 place-items-center rounded-lg">
+            <NotepadMark className="size-5" />
+          </span>
+          <span className="font-display text-xl font-medium tracking-tight">
+            Notepad
+          </span>
         </Link>
 
         <div className="flex items-center gap-1">

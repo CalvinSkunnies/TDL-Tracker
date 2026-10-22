@@ -139,6 +139,7 @@ function EditorForm({
   const [notes, setNotes] = useState(task.notes);
   const [status, setStatus] = useState<TaskStatus>(task.status);
   const [priority, setPriority] = useState<TaskPriority>(task.priority);
+  const [startDate, setStartDate] = useState(task.startDate ?? "");
   const [dueDate, setDueDate] = useState(task.dueDate ?? "");
   const [tags, setTags] = useState(task.tags.join(", "));
   const [estimate, setEstimate] = useState(
@@ -150,11 +151,16 @@ function EditorForm({
     template?.recurrence ?? "daily",
   );
   const [titleError, setTitleError] = useState<string | null>(null);
+  const [dateError, setDateError] = useState<string | null>(null);
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     if (title.trim() === "") {
       setTitleError("Give the task a title.");
+      return;
+    }
+    if (startDate && dueDate && dueDate < startDate) {
+      setDateError("The end date can't be before the start date.");
       return;
     }
     onSubmit(
@@ -163,6 +169,7 @@ function EditorForm({
         notes,
         status,
         priority,
+        startDate: startDate || null,
         dueDate: dueDate || null,
         tags: parseTagInput(tags),
         estimateMinutes: fieldToMinutes(estimate),
@@ -193,7 +200,7 @@ function EditorForm({
         autoComplete="off"
       />
       <Textarea
-        label="Notes"
+        label="Description (optional)"
         value={notes}
         onChange={(event) => setNotes(event.target.value)}
         rows={3}
@@ -224,10 +231,24 @@ function EditorForm({
       </Select>
 
       <Input
-        label="Due date"
+        label="Start date"
+        type="date"
+        value={startDate}
+        onChange={(event) => {
+          setStartDate(event.target.value);
+          if (dateError) setDateError(null);
+        }}
+      />
+      <Input
+        label="End date / deadline"
         type="date"
         value={dueDate}
-        onChange={(event) => setDueDate(event.target.value)}
+        min={startDate || undefined}
+        onChange={(event) => {
+          setDueDate(event.target.value);
+          if (dateError) setDateError(null);
+        }}
+        error={dateError}
       />
       <Input
         label="Tags"
@@ -235,6 +256,7 @@ function EditorForm({
         onChange={(event) => setTags(event.target.value)}
         hint="Separate with commas or spaces."
         autoComplete="off"
+        wrapperClassName="sm:col-span-2"
       />
 
       <Input

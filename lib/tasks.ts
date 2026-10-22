@@ -123,6 +123,7 @@ export function createTask(input: NewTask, now = new Date()): Task | null {
     updatedAt: stamp,
     completedAt: status === "done" ? stamp : null,
     dueDate: dateOnlyOrNull(input.dueDate),
+    startDate: dateOnlyOrNull(input.startDate),
     priority: oneOf(TASK_PRIORITIES, input.priority, "medium"),
     tags: normalizeTags(input.tags ?? []),
     estimateMinutes: minutesOrNull(input.estimateMinutes),
@@ -155,6 +156,8 @@ export function applyPatch(
           ? stamp
           : null,
     dueDate: "dueDate" in patch ? dateOnlyOrNull(patch.dueDate) : task.dueDate,
+    startDate:
+      "startDate" in patch ? dateOnlyOrNull(patch.startDate) : task.startDate,
     priority: oneOf(TASK_PRIORITIES, patch.priority, task.priority),
     tags: patch.tags ? normalizeTags(patch.tags) : task.tags,
     estimateMinutes:
@@ -194,6 +197,7 @@ export function normalizeTask(raw: unknown): Task | null {
     completedAt:
       status === "done" ? isoOr(r.completedAt, isoOr(r.updatedAt, now)) : null,
     dueDate: dateOnlyOrNull(r.dueDate),
+    startDate: dateOnlyOrNull(r.startDate),
     priority: oneOf(TASK_PRIORITIES, r.priority, "medium"),
     tags: Array.isArray(r.tags) ? normalizeTags(r.tags) : [],
     estimateMinutes: minutesOrNull(r.estimateMinutes),

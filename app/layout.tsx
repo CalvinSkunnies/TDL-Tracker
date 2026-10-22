@@ -19,11 +19,11 @@ const inter = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "web-app",
-  description: "Next.js, TypeScript and Tailwind CSS starter",
+  title: "Notepad",
+  description: "A private task and workload notepad.",
   // Private site: ask search engines not to index it.
   robots: { index: false, follow: false },
-  appleWebApp: { capable: true, title: "Tasks", statusBarStyle: "default" },
+  appleWebApp: { capable: true, title: "Notepad", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {

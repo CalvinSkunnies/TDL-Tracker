@@ -3,7 +3,12 @@
 import { Badge, Button, Checkbox } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import type { Recurrence, Task } from "@/lib/types";
-import { RECURRENCE_LABELS, describeDue, formatMinutes } from "./labels";
+import {
+  RECURRENCE_LABELS,
+  describeDue,
+  describeStart,
+  formatMinutes,
+} from "./labels";
 import { TaskTimer } from "./task-timer";
 
 interface TaskRowProps {
@@ -96,6 +101,11 @@ export function TaskRow({
             <Badge variant={task.priority === "high" ? "primary" : "ghost"}>
               {task.priority === "high" ? "High priority" : "Low priority"}
             </Badge>
+          )}
+          {task.startDate && (
+            <span className="text-ink-muted tabular-nums">
+              Starts {describeStart(task.startDate, today)}
+            </span>
           )}
           {due && (
             <span

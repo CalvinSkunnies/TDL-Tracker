@@ -58,6 +58,18 @@ const fullDateTime = new Intl.DateTimeFormat(undefined, {
   timeStyle: "short",
 });
 
+/** "today", "tomorrow", "yesterday" or "Oct 14" — used after "Starts". */
+export function describeStart(start: string, today: string): string {
+  const diffDays = Math.round(
+    (parseDateString(start).getTime() - parseDateString(today).getTime()) /
+      86_400_000,
+  );
+  if (diffDays === 0) return "today";
+  if (diffDays === 1) return "tomorrow";
+  if (diffDays === -1) return "yesterday";
+  return shortDate.format(parseDateString(start));
+}
+
 export function formatTimestamp(iso: string): string {
   return fullDateTime.format(new Date(iso));
 }

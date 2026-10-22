@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { Card, CardDescription, CardTitle } from "@/components/ui";
 import { LoginForm } from "./login-form";
 
-export const metadata: Metadata = { title: "Sign in · web-app" };
+export const metadata: Metadata = { title: "Sign in · Notepad" };
 
 export default function LoginPage() {
   return (

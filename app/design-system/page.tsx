@@ -14,7 +14,7 @@ import {
   Textarea,
 } from "@/components/ui";
 
-export const metadata: Metadata = { title: "Design system · web-app" };
+export const metadata: Metadata = { title: "Design system · Notepad" };
 
 const swatches = [
   {

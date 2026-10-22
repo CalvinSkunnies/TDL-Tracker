@@ -7,8 +7,8 @@ import type { MetadataRoute } from "next";
  */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "web-app task tracker",
-    short_name: "Tasks",
+    name: "Notepad",
+    short_name: "Notepad",
     description:
       "A private, offline-capable personal task and workload tracker.",
     start_url: "/tracker",

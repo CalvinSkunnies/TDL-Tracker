@@ -8,6 +8,7 @@ import {
   SESSION_COOKIE,
   SESSION_COOKIE_OPTIONS,
   SESSION_MAX_AGE_SECONDS,
+  authConfigProblem,
   createSessionToken,
   isAuthConfigured,
 } from "@/lib/session";
@@ -44,6 +45,8 @@ export async function login(
   formData: FormData,
 ): Promise<LoginState> {
   if (!isAuthConfigured()) {
+    // Server-side only: names the missing env var without revealing any value.
+    console.error(`[auth] sign-in unavailable: ${authConfigProblem()}`);
     return { error: "Sign-in isn't configured on this server yet." };
   }
 

@@ -1,11 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="web-app task tracker">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Notepad">
   <rect width="512" height="512" rx="112" fill="#d97757" />
-  <path
-    d="M150 265l70 70 145-155"
-    fill="none"
-    stroke="#1a1a1a"
-    stroke-width="46"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-  />
+  <rect x="128" y="96" width="256" height="320" rx="28" fill="#faf9f5" />
+  <path d="M176 96v320" stroke="#d97757" stroke-width="16" />
+  <g stroke="#1a1a1a" stroke-width="14" stroke-linecap="round">
+    <path d="M208 176h128" />
+    <path d="M208 232h128" />
+    <path d="M208 288h128" />
+    <path d="M208 344h84" />
+  </g>
+  <g fill="#faf9f5" stroke="#1a1a1a" stroke-width="10">
+    <circle cx="176" cy="152" r="14" />
+    <circle cx="176" cy="256" r="14" />
+    <circle cx="176" cy="360" r="14" />
+  </g>
 </svg>

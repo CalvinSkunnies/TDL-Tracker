@@ -40,7 +40,7 @@ import type {
 
 export const STORAGE_KEY = "tdl-tracker:data";
 const BACKUP_KEY = `${STORAGE_KEY}:backup`;
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 type RawState = {
   version: number;
@@ -109,6 +109,16 @@ const migrations: Record<number, Migration> = {
       settings: state.settings ?? { dailyCapacityHours: DEFAULT_CAPACITY_HOURS },
     };
   },
+  // v2 → v3: tasks gained an optional start date (null when unset).
+  2: (state) => ({
+    ...state,
+    version: 3,
+    tasks: state.tasks.map((raw) =>
+      typeof raw === "object" && raw !== null
+        ? { startDate: null, ...(raw as Record<string, unknown>) }
+        : raw,
+    ),
+  }),
 };
 
 /* ------------------------------------------------------------------ */

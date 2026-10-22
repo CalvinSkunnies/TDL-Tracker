@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Button } from "@/components/ui";
 import { downloadTextFile, prefersReducedMotion } from "@/lib/backup";
 import type { SaveOptions } from "@/lib/store";
 import { useTasks } from "@/lib/use-tasks";
 import { useToday } from "@/lib/use-today";
-import type { Task, TaskPatch, TaskStatus } from "@/lib/types";
+import type { NewTask, Task, TaskPatch, TaskStatus } from "@/lib/types";
+import { AddTaskDialog } from "./add-task-dialog";
 import { CapacityView } from "./capacity-view";
 import { CommandPalette } from "./command-palette";
 import { DataControls } from "./data-controls";
@@ -84,6 +86,8 @@ export function TasksApp() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<Task | null>(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
+  const [addTitle, setAddTitle] = useState("");
 
   /**
    * A row that changes group is re-created, which would drop keyboard focus.
@@ -164,6 +168,17 @@ export function TasksApp() {
     return true;
   }
 
+  function openAddForm(title = "") {
+    setAddTitle(title);
+    setAddOpen(true);
+  }
+
+  function handleCreate(input: NewTask) {
+    const task = addTask(input);
+    setAddOpen(false);
+    if (task) notify(`Added “${task.title}”.`, "success");
+  }
+
   function handleToggle(task: Task) {
     const updated = toggleStatus(task.id);
     pendingFocus.current = { id: task.id, target: "checkbox" };
@@ -219,6 +234,11 @@ export function TasksApp() {
       run: () => quickAddRef.current?.focus(),
     },
     {
+      id: "add-details",
+      label: "New task with details",
+      run: () => openAddForm(),
+    },
+    {
       id: "search",
       label: "Search tasks",
       hint: "/",
@@ -262,11 +282,16 @@ export function TasksApp() {
           </p>
         </div>
         {!isLoading && (
-          <DataControls
-            today={today}
-            onExport={exportData}
-            onImport={importData}
-          />
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <Button size="sm" onClick={() => openAddForm()}>
+              New task
+            </Button>
+            <DataControls
+              today={today}
+              onExport={exportData}
+              onImport={importData}
+            />
+          </div>
         )}
       </header>
 
@@ -289,7 +314,12 @@ export function TasksApp() {
         </div>
       )}
 
-      <QuickAdd onAdd={handleAdd} disabled={isLoading} inputRef={quickAddRef} />
+      <QuickAdd
+        onAdd={handleAdd}
+        onDetails={openAddForm}
+        disabled={isLoading}
+        inputRef={quickAddRef}
+      />
       <p className="text-ink-muted mt-2 text-xs">
         Press <kbd className="font-sans font-semibold">n</kbd> to add,{" "}
         <kbd className="font-sans font-semibold">/</kbd> to search,{" "}
@@ -373,6 +403,12 @@ export function TasksApp() {
         </div>
       )}
 
+      <AddTaskDialog
+        open={addOpen}
+        initialTitle={addTitle}
+        onClose={() => setAddOpen(false)}
+        onCreate={handleCreate}
+      />
       <TaskEditor
         task={editing}
         template={editingTemplate}

@@ -1,4 +1,4 @@
-# web-app
+# Notepad
 
 A private, offline-capable personal task and workload tracker built with
 Next.js (App Router), TypeScript and Tailwind CSS. It is gated behind a single
@@ -136,6 +136,15 @@ Generate a secret with `openssl rand -base64 32`.
 > The login lockout is held in memory, so on serverless hosting it survives
 > only on a warm instance. It discourages brute force but is not a hard cap; back
 > it with shared storage (e.g. Vercel KV / Upstash Redis) if you need one.
+
+### Troubleshooting sign-in
+
+| Symptom | Cause and fix |
+| --- | --- |
+| "Sign-in isn't configured on this server yet." | `AUTH_SECRET` (32+ chars) and/or `APP_PASSPHRASE` is missing at runtime. Check **Vercel → Settings → Environment Variables** for both, then **redeploy** — env changes only apply to new deployments. The server log names the exact variable: Vercel → **Logs** → look for `[auth] sign-in unavailable: …`. |
+| "That passphrase isn't right." | The value typed differs from `APP_PASSPHRASE` (watch for stray spaces, and note the comparison is exact). |
+| "Too many attempts." | Five failures from your IP triggered the 15-minute lockout. Wait it out, or restart the deployment to reset the in-memory counter. |
+| Redirected to `/login` on every visit | The session cookie was not stored or was dropped: it requires HTTPS (`Secure`) and the `__Host-` prefix, so use the production domain, not `http://localhost`. |
 
 ## Private URL & routing strategy
 
