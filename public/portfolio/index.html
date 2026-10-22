@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CALVINSKUNNIES — PORTFOLIO</title>
+<meta name="description" content="CalvinSkunnies — data analyst, research analyst, web3 community builder. Analytics, crypto markets, and the communities behind them.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎲</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#09090b;--surface:#18181b;--surface-2:#27272a;
+  --border:#3f3f46;--border-subtle:#27272a;
+  --text:#fafafa;--text-muted:#a1a1aa;--text-dim:#71717a;
+  --accent:#a78bfa;--accent-light:#c4b5fd;--accent-dim:rgba(167,139,250,.12);
+  --sky:#22d3ee;--sky-dim:rgba(34,211,238,.1);
+  --radius:16px;--radius-lg:24px;
+  --ease:cubic-bezier(.4,0,.2,1);
+}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:'Inter',system-ui,-apple-system,sans-serif;
+  font-size:16px;line-height:1.65;
+  overflow-x:hidden;-webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--accent);color:#09090b}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* ambient glow */
+.ambient{position:fixed;inset:0;pointer-events:none;z-index:-1}
+.ambient::before{content:"";position:absolute;top:-20%;left:-10%;width:600px;height:600px;background:radial-gradient(circle,rgba(167,139,250,.08),transparent 70%);filter:blur(80px)}
+.ambient::after{content:"";position:absolute;bottom:-20%;right:-10%;width:500px;height:500px;background:radial-gradient(circle,rgba(34,211,238,.06),transparent 70%);filter:blur(80px)}
+
+main{max-width:1080px;margin:0 auto;padding:0 24px 80px}
+
+/* ---------- NAV ---------- */
+nav{position:sticky;top:0;z-index:100;padding:20px 0;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);background:rgba(9,9,11,.8);border-bottom:1px solid var(--border-subtle)}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;max-width:1080px;margin:0 auto;padding:0 24px}
+.logo{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:17px;letter-spacing:.08em;color:var(--text);text-decoration:none}
+.logo span{color:var(--accent)}
+.nav-links{display:flex;gap:8px}
+.nav-links a{text-decoration:none;color:var(--text-muted);font-size:13px;font-weight:500;padding:8px 16px;border-radius:8px;transition:all .2s var(--ease)}
+.nav-links a:hover{color:var(--text);background:var(--accent-dim)}
+.nav-links a.active{color:var(--accent);background:var(--accent-dim)}
+.mobile-toggle{display:none;background:none;border:1px solid var(--border);color:var(--text);font-size:18px;border-radius:8px;width:40px;height:40px;cursor:pointer}
+
+/* ---------- HERO ---------- */
+.hero{padding:80px 0 40px}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;background:var(--accent-dim);border:1px solid rgba(167,139,250,.2);color:var(--accent-light);font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:6px 14px;border-radius:100px;margin-bottom:28px}
+.hero-badge .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse 2s ease infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.hero-grid{display:grid;grid-template-columns:1fr 280px;gap:48px;align-items:center}
+.hero h1{font-family:'Space Grotesk',sans-serif;font-size:clamp(42px,7vw,72px);font-weight:700;line-height:1.05;letter-spacing:-.03em;margin-bottom:20px}
+.hero h1 .accent{color:var(--accent)}
+.hero h1 .dim{color:var(--text-dim)}
+.hero-sub{font-size:18px;color:var(--text-muted);max-width:560px;margin-bottom:12px}
+.hero-sub b{color:var(--text);font-weight:600}
+.hero-role{display:flex;align-items:center;gap:10px;font-size:15px;color:var(--text-dim);margin-bottom:36px}
+.hero-role .flip{position:relative;height:1.4em;overflow:hidden;color:var(--sky);font-weight:600}
+.hero-role .flip ul{list-style:none;animation:flip 10s var(--ease) infinite}
+.hero-role .flip li{height:1.4em;line-height:1.4em}
+@keyframes flip{0%,20%{transform:translateY(0)}25%,45%{transform:translateY(-1.4em)}50%,70%{transform:translateY(-2.8em)}75%,100%{transform:translateY(-4.2em)}}
+.hero-actions{display:flex;flex-wrap:wrap;gap:12px}
+.hero-image{display:flex;justify-content:center;align-items:center}
+.hero-image img{width:240px;height:240px;border-radius:50%;object-fit:cover;border:2px solid var(--border);box-shadow:0 0 60px rgba(167,139,250,.15)}
+
+/* ---------- BUTTONS ---------- */
+.btn{display:inline-flex;align-items:center;gap:8px;text-decoration:none;font-weight:600;font-size:14px;padding:12px 24px;border-radius:10px;transition:all .2s var(--ease);border:1px solid transparent}
+.btn svg{width:16px;height:16px}
+.btn-primary{background:var(--accent);color:#09090b;border-color:var(--accent)}
+.btn-primary:hover{background:var(--accent-light);transform:translateY(-1px);box-shadow:0 8px 24px rgba(167,139,250,.25)}
+.btn-outline{border-color:var(--border);color:var(--text)}
+.btn-outline:hover{border-color:var(--text-muted);background:var(--surface)}
+.btn-ghost{color:var(--text-muted);padding:12px 16px}
+.btn-ghost:hover{color:var(--text);background:var(--surface)}
+
+/* ---------- SECTION ---------- */
+.section{margin-top:80px}
+.section-label{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:20px}
+.section-label::before{content:"";width:20px;height:1px;background:var(--accent)}
+.section-title{font-family:'Space Grotesk',sans-serif;font-size:clamp(28px,4vw,40px);font-weight:700;letter-spacing:-.02em;line-height:1.15;margin-bottom:8px}
+.section-desc{color:var(--text-muted);font-size:16px;max-width:520px}
+
+/* ---------- SKILLS ---------- */
+.skills-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:28px}
+.skill-card{background:var(--surface);border:1px solid var(--border-subtle);border-radius:var(--radius);padding:24px;transition:all .3s var(--ease)}
+.skill-card:hover{border-color:var(--border);transform:translateY(-2px);box-shadow:0 12px 32px rgba(0,0,0,.3)}
+.skill-card .label{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:10px}
+.skill-card.blue .label{color:var(--sky)}
+.skill-card .desc{font-size:14px;color:var(--text-muted);line-height:1.55}
+
+/* ---------- EXPERIENCE ---------- */
+.xp-list{display:flex;flex-direction:column;gap:16px;margin-top:28px}
+.xp-card{background:var(--surface);border:1px solid var(--border-subtle);border-radius:var(--radius-lg);padding:32px;display:grid;grid-template-columns:1fr 260px;gap:32px;align-items:center;transition:all .3s var(--ease)}
+.xp-card:hover{border-color:var(--border)}
+.xp-date{font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+.xp-role{font-size:13px;color:var(--sky);font-weight:500;margin-bottom:4px}
+.xp-title{font-family:'Space Grotesk',sans-serif;font-size:clamp(20px,2.5vw,26px);font-weight:700;letter-spacing:-.01em;margin-bottom:12px}
+.xp-desc{color:var(--text-muted);font-size:14px;line-height:1.6;margin-bottom:16px}
+.xp-tags{display:flex;flex-wrap:wrap;gap:8px}
+.xp-tag{background:var(--accent-dim);border:1px solid rgba(167,139,250,.15);color:var(--accent-light);font-size:12px;font-weight:500;padding:5px 12px;border-radius:100px}
+.xp-tag.blue{background:var(--sky-dim);border-color:rgba(34,211,238,.15);color:var(--sky)}
+.xp-logo{display:flex;align-items:center;justify-content:center;border-radius:var(--radius);border:1px solid var(--border-subtle);background:var(--bg);padding:24px;aspect-ratio:16/10}
+.xp-logo img{max-width:100%;max-height:80px;object-fit:contain;filter:brightness(0) invert(1);opacity:.9}
+.xp-logo img.light{filter:none;opacity:1}
+.projects-cta{display:flex;justify-content:center;margin-top:32px}
+
+/* ---------- CONTACT ---------- */
+.contact-card{background:var(--surface);border:1px solid var(--border-subtle);border-radius:var(--radius-lg);padding:48px;margin-top:28px;display:grid;grid-template-columns:1fr auto;gap:40px;align-items:center}
+.contact-card h3{font-family:'Space Grotesk',sans-serif;font-size:clamp(24px,3vw,32px);font-weight:700;margin-bottom:12px;line-height:1.2}
+.contact-card h3 span{color:var(--accent)}
+.contact-card p{color:var(--text-muted);max-width:440px;margin-bottom:24px;font-size:15px}
+.contact-cta{display:inline-flex;align-items:center;gap:10px;background:linear-gradient(135deg,var(--accent),var(--sky));color:#09090b;font-weight:700;font-size:13px;letter-spacing:.08em;text-transform:uppercase;padding:14px 28px;border-radius:100px;text-decoration:none;white-space:nowrap;transition:all .3s var(--ease)}
+.contact-cta:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(167,139,250,.3)}
+.contact-links{display:flex;gap:10px;flex-wrap:wrap}
+
+/* ---------- FOOTER ---------- */
+footer{max-width:1080px;margin:0 auto;padding:0 24px 40px}
+.foot-inner{display:flex;justify-content:space-between;align-items:center;padding:20px 28px;background:var(--surface);border:1px solid var(--border-subtle);border-radius:100px;font-size:13px;color:var(--text-dim);flex-wrap:wrap;gap:12px}
+.foot-inner b{color:var(--accent);letter-spacing:.06em}
+.back-top{position:fixed;bottom:28px;right:28px;width:44px;height:44px;border-radius:50%;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:all .3s var(--ease);z-index:100}
+.back-top.show{opacity:1;pointer-events:auto}
+.back-top:hover{border-color:var(--accent);transform:translateY(-2px)}
+
+/* ---------- REVEAL ---------- */
+.reveal{opacity:0;transform:translateY(20px);transition:opacity .6s var(--ease),transform .6s var(--ease)}
+.reveal.on{opacity:1;transform:translateY(0)}
+.reveal[data-delay="1"]{transition-delay:.06s}
+.reveal[data-delay="2"]{transition-delay:.12s}
+.reveal[data-delay="3"]{transition-delay:.18s}
+.reveal[data-delay="4"]{transition-delay:.24s}
+.reveal[data-delay="5"]{transition-delay:.3s}
+
+/* ---------- STICKER TAGS ---------- */
+.stickers{margin-top:48px;text-align:center}
+.sticker-hint{font-size:11px;color:var(--text-dim);letter-spacing:.12em;text-transform:uppercase;margin-bottom:16px}
+.sticker-zone{position:relative;height:160px;max-width:800px;margin:0 auto}
+.sticker{position:absolute;cursor:grab;user-select:none;background:var(--surface);border:1px solid var(--border-subtle);color:var(--text-muted);font-size:12px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;padding:8px 16px;border-radius:100px;transition:box-shadow .2s;touch-action:none;white-space:nowrap}
+.sticker:active{cursor:grabbing;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+
+/* ---------- SPARKLE ---------- */
+.sparkle{position:fixed;pointer-events:none;z-index:999;font-size:12px;animation:twinkle .6s ease-out forwards}
+@keyframes twinkle{0%{opacity:1;transform:translate(0,0) scale(1)}100%{opacity:0;transform:translate(10px,-20px) scale(.3) rotate(45deg)}}
+
+/* ---------- RESPONSIVE ---------- */
+@media(max-width:768px){
+  .nav-links{display:none;position:fixed;top:72px;left:16px;right:16px;flex-direction:column;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;z-index:99}
+  .nav-links.open{display:flex}
+  .mobile-toggle{display:flex;align-items:center;justify-content:center}
+  .hero-grid{grid-template-columns:1fr;gap:32px}
+  .hero-image{order:-1}
+  .xp-card{grid-template-columns:1fr}
+  .xp-logo{display:none}
+  .contact-card{grid-template-columns:1fr}
+  .contact-cta{display:none}
+  .sticker-zone{height:200px}
+}
+@media(max-width:480px){
+  .skills-grid{grid-template-columns:1fr}
+  .hero{padding:48px 0 24px}
+  .section{margin-top:56px}
+  .hero-image img{width:180px;height:180px}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+}
+</style>
+</head>
+<body>
+<div class="ambient"></div>
+
+<nav>
+  <div class="nav-inner">
+    <a class="logo" href="#top">CALVIN<span>SKUNNIES</span></a>
+    <div class="nav-links" id="navLinks">
+      <a href="#top">About</a>
+      <a href="#skills">Skills</a>
+      <a href="#experience">Experience</a>
+      <a href="projects.html">Projects</a>
+      <a href="#contact">Contact</a>
+      <a href="/tdl/tracker">Tracker</a>
+    </div>
+    <button class="mobile-toggle" id="menuBtn" aria-label="Menu">☰</button>
+  </div>
+</nav>
+
+<main id="top">
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-grid">
+      <div>
+        <div class="hero-badge"><span class="dot"></span> available for work</div>
+        <h1>People call me<br><span class="accent">CalvinSkunnies</span><span class="dim">.</span></h1>
+        <p class="hero-sub">A few years turning raw data into dashboards, pipelines, and communities. Crypto research at <b>Reform DAO</b>, automating reports that cut SLA from 8h to 1, and building across <b>Monad</b> and <b>Edge Matrix Chain</b>.</p>
+        <div class="hero-role">currently a
+          <span class="flip">
+            <ul>
+              <li>Data Analyst</li>
+              <li>Research Analyst</li>
+              <li>Discord Moderator</li>
+              <li>Web3 Community Builder</li>
+            </ul>
+          </span>
+        </div>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#experience">View experience <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+          <a class="btn btn-outline" href="#contact">Get in touch</a>
+        </div>
+      </div>
+      <div class="hero-image">
+        <img src="assets/hero.jpg" alt="CalvinSkunnies">
+      </div>
+    </div>
+  </section>
+
+  <!-- STICKERS -->
+  <div class="stickers">
+    <div class="sticker-hint">drag these around</div>
+    <div class="sticker-zone" id="stickerZone">
+      <span class="sticker">indonesia</span>
+      <span class="sticker">data nerd</span>
+      <span class="sticker">web3 native</span>
+      <span class="sticker">discord mod</span>
+      <span class="sticker">power bi</span>
+      <span class="sticker">python</span>
+      <span class="sticker">monad</span>
+      <span class="sticker">edge matrix chain</span>
+      <span class="sticker">id · en</span>
+    </div>
+  </div>
+
+  <!-- SKILLS -->
+  <section class="section" id="skills">
+    <div class="section-label">The Toolkit</div>
+    <h2 class="section-title reveal">Big on results,<br>bigger on people.</h2>
+    <p class="section-desc reveal" data-delay="1">The analysis is serious. The energy isn't.</p>
+    <div class="skills-grid">
+      <div class="skill-card reveal"><div class="label">Data Analytics</div><div class="desc">SQL, Python, Power BI — turning raw numbers into clear, practical insights</div></div>
+      <div class="skill-card blue reveal" data-delay="1"><div class="label">Automation</div><div class="desc">GitHub Actions and AI agents that cut reporting SLA from 8h to 1h</div></div>
+      <div class="skill-card reveal" data-delay="2"><div class="label">Machine Learning</div><div class="desc">Statistics and ML models for forecasting markets and business outcomes</div></div>
+      <div class="skill-card blue reveal" data-delay="3"><div class="label">Community</div><div class="desc">Onboarding, engagement, and sentiment across Edge Matrix Chain and Monad Discord</div></div>
+      <div class="skill-card reveal" data-delay="4"><div class="label">Research</div><div class="desc">Crypto deep-dives, token and project analysis, real-time market health tracking</div></div>
+      <div class="skill-card blue reveal" data-delay="5"><div class="label">Reporting</div><div class="desc">Dashboards, KPIs, and summaries leadership actually acts on</div></div>
+    </div>
+  </section>
+
+  <!-- EXPERIENCE -->
+  <section class="section" id="experience">
+    <div class="section-label">The Track Record</div>
+    <h2 class="section-title reveal">Where I've made moves.</h2>
+    <p class="section-desc reveal" data-delay="1">Ordered by impact, not by the calendar.</p>
+    <div class="xp-list">
+
+      <div class="xp-card reveal">
+        <div>
+          <div class="xp-date">Web3 · Ambassador</div>
+          <div class="xp-role">BNB Chain Ambassador · BNB Chain</div>
+          <div class="xp-title">BNB Chain</div>
+          <p class="xp-desc">Selected as a BNB Chain Ambassador, hosting the offline workshop "BNB Builder Sessions — Jakarta", amplifying BNB Chain content across social channels, and supporting ambassador tasks to grow the builder community.</p>
+          <div class="xp-tags">
+            <span class="xp-tag">BNB Builder Sessions — Jakarta</span>
+            <span class="xp-tag">content amplification</span>
+            <span class="xp-tag blue">ecosystem growth</span>
+          </div>
+        </div>
+        <div class="xp-logo"><img src="assets/bnbchain-logo.svg" alt="BNB Chain" class="light"></div>
+      </div>
+
+      <div class="xp-card reveal">
+        <div>
+          <div class="xp-date">Jan 2025 — Feb 2026</div>
+          <div class="xp-role">Research Analyst · Hofida Limited · Remote</div>
+          <div class="xp-title">Reform DAO</div>
+          <p class="xp-desc">Deep research on upcoming projects, listed coins, and market moves. Built interactive dashboards that track project performance and market health live, and automated data extraction across multiple exchanges.</p>
+          <div class="xp-tags">
+            <span class="xp-tag">4 dashboards built</span>
+            <span class="xp-tag">7 exchanges automated</span>
+            <span class="xp-tag blue">real-time market health</span>
+          </div>
+        </div>
+        <div class="xp-logo"><img src="assets/reformdaologo.svg" alt="Reform DAO" class="light"></div>
+      </div>
+
+      <div class="xp-card reveal">
+        <div>
+          <div class="xp-date">Jan 2024 — Aug 2024</div>
+          <div class="xp-role">Data Analytics & Insight · Jakarta</div>
+          <div class="xp-title">FWD Insurance</div>
+          <p class="xp-desc">Analyzed and visualized complex datasets with SQL, Excel, and Power BI. Streamlined analytics workflows and ran UAT for data and campaign rollouts to keep deployments clean and reliable.</p>
+          <div class="xp-tags">
+            <span class="xp-tag">SLA 5h → 1h</span>
+            <span class="xp-tag">sales +30%</span>
+            <span class="xp-tag blue">UAT delivery</span>
+          </div>
+        </div>
+        <div class="xp-logo"><img src="assets/fwd-logo.svg" alt="FWD Insurance" class="light"></div>
+      </div>
+
+      <div class="xp-card reveal">
+        <div>
+          <div class="xp-date">Sep 2024 — Dec 2024</div>
+          <div class="xp-role">Business Development · Jakarta</div>
+          <div class="xp-title">Shopee International</div>
+          <p class="xp-desc">Kept the Shopee Supermarket page accurate and on time, and dug into exclusive brands and suppliers to surface product performance and market trends.</p>
+          <div class="xp-tags">
+            <span class="xp-tag">20+ brands analyzed</span>
+            <span class="xp-tag">daily content ops</span>
+            <span class="xp-tag blue">market insights</span>
+          </div>
+        </div>
+        <div class="xp-logo"><img src="assets/shopeelogo.png" alt="Shopee International" class="light"></div>
+      </div>
+
+      <div class="xp-card reveal">
+        <div>
+          <div class="xp-date">Web3 · Community</div>
+          <div class="xp-role">Discord Moderator · Web3</div>
+          <div class="xp-title">Edge Matrix Chain</div>
+          <p class="xp-desc">Ran community channels, kept guidelines in check, sorted out disputes, and onboarded newcomers to keep the ecosystem healthy and active.</p>
+          <div class="xp-tags">
+            <span class="xp-tag">moderation</span>
+            <span class="xp-tag">community onboarding</span>
+            <span class="xp-tag blue">conflict resolution</span>
+          </div>
+        </div>
+        <div class="xp-logo"><img src="assets/emc-logo.png" alt="Edge Matrix Chain" class="light"></div>
+      </div>
+
+      <div class="xp-card reveal">
+        <div>
+          <div class="xp-date">Web3 · Community</div>
+          <div class="xp-role">Community Contributor · LocalNads</div>
+          <div class="xp-title">Monad</div>
+          <p class="xp-desc">Active in the Monad ecosystem from the start, driving engagement, supporting events, and helping the community grow from the ground up.</p>
+          <div class="xp-tags">
+            <span class="xp-tag">engagement</span>
+            <span class="xp-tag">event support</span>
+            <span class="xp-tag blue">ecosystem growth</span>
+          </div>
+        </div>
+        <div class="xp-logo"><img src="assets/monad.jpg" alt="Monad" class="light"></div>
+      </div>
+
+      <div class="xp-card reveal">
+        <div>
+          <div class="xp-date">Founder · Project</div>
+          <div class="xp-role">Solana token vesting protocol</div>
+          <div class="xp-title">SimplyVest</div>
+          <p class="xp-desc">Built a token vesting protocol on Solana with PDA vaults and cliff, linear, and milestone streams, hardened by 147+ tests.</p>
+          <div class="xp-tags">
+            <span class="xp-tag">147+ tests</span>
+            <span class="xp-tag">PDA vaults</span>
+            <span class="xp-tag blue">vesting streams</span>
+          </div>
+        </div>
+        <div class="xp-logo"><img src="assets/simplyvest-logo.svg" alt="SimplyVest" class="light"></div>
+      </div>
+
+    </div>
+
+    <div class="projects-cta reveal">
+      <a class="btn btn-outline" href="projects.html">View projects <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <section class="section" id="contact">
+    <div class="section-label">Before You Go</div>
+    <div class="contact-card reveal">
+      <div>
+        <h3>That's the tour.<br><span>Let's work together.</span></h3>
+        <p>Hiring a data analyst, building a Web3 community, or looking for someone who can bridge both worlds? I'm just a message away.</p>
+        <div class="contact-links">
+          <a class="btn btn-primary" href="mailto:calvinsntf@gmail.com">Email <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+          <a class="btn btn-outline" href="https://x.com/Skunnies" target="_blank" rel="noopener">X</a>
+          <a class="btn btn-outline" href="https://t.me/skunnies" target="_blank" rel="noopener">Telegram</a>
+          <a class="btn btn-outline" href="https://www.linkedin.com/in/calvin-sutio-aa7278201/" target="_blank" rel="noopener">LinkedIn</a>
+        </div>
+      </div>
+      <div>
+        <span class="contact-cta">let's talk →</span>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <span><b>CALVINSKUNNIES</b> · Data Analyst · Web3 Community · Indonesia</span>
+    <span>© 2026 · @calvinskunnies</span>
+  </div>
+</footer>
+
+<button class="back-top" id="btt" aria-label="Back to top">↑</button>
+
+<script>
+/* scroll progress + back-to-top */
+const btt=document.getElementById('btt');
+window.addEventListener('scroll',()=>{
+  btt.classList.toggle('show',window.scrollY>500);
+  /* scroll-spy */
+  const secs=['top','skills','experience','contact'];
+  let cur='top';
+  secs.forEach(id=>{const el=document.getElementById(id);if(el&&el.getBoundingClientRect().top<120)cur=id;});
+  document.querySelectorAll('.nav-links a').forEach(a=>a.classList.toggle('active',a.getAttribute('href')==='#'+cur));
+},{passive:true});
+
+/* reveal on scroll */
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('on');io.unobserve(e.target);}}),{threshold:.1});
+document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+
+/* sparkle trail */
+const glyphs=['✦','✧','⋆'];const colors=['#a78bfa','#22d3ee','#c4b5fd','#fff'];
+let last=0;
+document.addEventListener('mousemove',e=>{
+  const now=Date.now();if(now-last<50)return;last=now;
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  const s=document.createElement('span');s.className='sparkle';
+  s.textContent=glyphs[Math.floor(Math.random()*glyphs.length)];
+  s.style.color=colors[Math.floor(Math.random()*colors.length)];
+  s.style.left=e.clientX+'px';s.style.top=e.clientY+'px';
+  document.body.appendChild(s);setTimeout(()=>s.remove(),600);
+});
+
+/* draggable stickers */
+const zone=document.getElementById('stickerZone');
+document.querySelectorAll('.sticker').forEach(tag=>{
+  let sx=0,sy=0,tx=0,ty=0,drag=false;
+  if(!zone)return;
+  const r=zone.getBoundingClientRect();
+  tag.style.left=(Math.random()*(r.width-140))+'px';
+  tag.style.top=(Math.random()*(r.height-40))+'px';
+  tag.addEventListener('pointerdown',e=>{drag=true;tag.setPointerCapture(e.pointerId);sx=e.clientX-tx;sy=e.clientY-ty;tag.style.position='absolute'});
+  tag.addEventListener('pointermove',e=>{if(!drag)return;tx=e.clientX-sx;ty=e.clientY-sy;tag.style.transform=`translate(${tx}px,${ty}px)`});
+  tag.addEventListener('pointerup',()=>drag=false);
+  tag.addEventListener('pointercancel',()=>drag=false);
+});
+
+/* mobile menu */
+const menuBtn=document.getElementById('menuBtn');const navLinks=document.getElementById('navLinks');
+menuBtn.addEventListener('click',()=>navLinks.classList.toggle('open'));
+document.querySelectorAll('.nav-links a').forEach(a=>a.addEventListener('click',()=>navLinks.classList.remove('open')));
+
+/* back to top */
+btt.addEventListener('click',()=>window.scrollTo({top:0,behavior:'smooth'}));
+</script>
+</body>
+</html>

@@ -31,13 +31,13 @@ async function clientKey(): Promise<string> {
 
 /** Only same-site relative paths, to avoid open redirects. */
 function safeRedirectTarget(value: FormDataEntryValue | null): string {
-  if (typeof value !== "string") return "/";
+  if (typeof value !== "string") return "/tdl/tracker";
   const ok =
     value.startsWith("/") &&
     !value.startsWith("//") &&
     !value.startsWith("/\\") &&
-    !value.startsWith("/login");
-  return ok ? value : "/";
+    !value.startsWith("/tdl/login");
+  return ok ? value : "/tdl/tracker";
 }
 
 export async function login(
@@ -87,5 +87,5 @@ export async function logout() {
   // Re-set with the same attributes and maxAge 0: a __Host- cookie must keep
   // Secure and Path=/ even when it is being expired.
   cookieStore.set(SESSION_COOKIE, "", { ...SESSION_COOKIE_OPTIONS, maxAge: 0 });
-  redirect("/login");
+  redirect("/tdl/login");
 }

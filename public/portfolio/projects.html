@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Projects — CALVINSKUNNIES</title>
+<meta name="description" content="Projects and work by CalvinSkunnies — dashboards, automation, and web3 products.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎲</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#09090b;--surface:#18181b;--surface-2:#27272a;
+  --border:#3f3f46;--border-subtle:#27272a;
+  --text:#fafafa;--text-muted:#a1a1aa;--text-dim:#71717a;
+  --accent:#a78bfa;--accent-light:#c4b5fd;--accent-dim:rgba(167,139,250,.12);
+  --sky:#22d3ee;--sky-dim:rgba(34,211,238,.1);
+  --radius:16px;--radius-lg:24px;
+  --ease:cubic-bezier(.4,0,.2,1);
+}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:'Inter',system-ui,-apple-system,sans-serif;
+  font-size:16px;line-height:1.65;
+  overflow-x:hidden;-webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--accent);color:#09090b}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* ambient glow */
+.ambient{position:fixed;inset:0;pointer-events:none;z-index:-1}
+.ambient::before{content:"";position:absolute;top:-20%;left:-10%;width:600px;height:600px;background:radial-gradient(circle,rgba(167,139,250,.08),transparent 70%);filter:blur(80px)}
+.ambient::after{content:"";position:absolute;bottom:-20%;right:-10%;width:500px;height:500px;background:radial-gradient(circle,rgba(34,211,238,.06),transparent 70%);filter:blur(80px)}
+
+main{max-width:1080px;margin:0 auto;padding:0 24px 80px}
+
+/* ---------- NAV ---------- */
+nav{position:sticky;top:0;z-index:100;padding:20px 0;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);background:rgba(9,9,11,.8);border-bottom:1px solid var(--border-subtle)}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;max-width:1080px;margin:0 auto;padding:0 24px}
+.logo{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:17px;letter-spacing:.08em;color:var(--text);text-decoration:none}
+.logo span{color:var(--accent)}
+.nav-links{display:flex;gap:8px}
+.nav-links a{text-decoration:none;color:var(--text-muted);font-size:13px;font-weight:500;padding:8px 16px;border-radius:8px;transition:all .2s var(--ease)}
+.nav-links a:hover{color:var(--text);background:var(--accent-dim)}
+.nav-links a.active{color:var(--accent);background:var(--accent-dim)}
+.mobile-toggle{display:none;background:none;border:1px solid var(--border);color:var(--text);font-size:18px;border-radius:8px;width:40px;height:40px;cursor:pointer}
+
+/* ---------- BUTTONS ---------- */
+.btn{display:inline-flex;align-items:center;gap:8px;text-decoration:none;font-weight:600;font-size:14px;padding:12px 24px;border-radius:10px;transition:all .2s var(--ease);border:1px solid transparent}
+.btn svg{width:16px;height:16px}
+.btn-primary{background:var(--accent);color:#09090b;border-color:var(--accent)}
+.btn-primary:hover{background:var(--accent-light);transform:translateY(-1px);box-shadow:0 8px 24px rgba(167,139,250,.25)}
+.btn-outline{border-color:var(--border);color:var(--text)}
+.btn-outline:hover{border-color:var(--text-muted);background:var(--surface)}
+
+/* ---------- HEADER ---------- */
+.page-head{padding:64px 0 8px}
+.section-label{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:20px}
+.section-label::before{content:"";width:20px;height:1px;background:var(--accent)}
+.section-title{font-family:'Space Grotesk',sans-serif;font-size:clamp(30px,5vw,48px);font-weight:700;letter-spacing:-.02em;line-height:1.1;margin-bottom:12px}
+.section-desc{color:var(--text-muted);font-size:17px;max-width:560px}
+
+/* ---------- PROJECTS ---------- */
+.projects-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:24px;margin-top:44px}
+.project-card{background:var(--surface);border:1px solid var(--border-subtle);border-radius:var(--radius-lg);overflow:hidden;transition:all .3s var(--ease);display:flex;flex-direction:column}
+.project-card:hover{border-color:var(--border);transform:translateY(-3px);box-shadow:0 16px 40px rgba(0,0,0,.35)}
+.project-media{position:relative;aspect-ratio:16/10;background:var(--bg);border-bottom:1px solid var(--border-subtle);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.project-media img{width:100%;height:100%;object-fit:cover}
+.media-placeholder{display:none;flex-direction:column;align-items:center;justify-content:center;gap:6px;width:100%;height:100%;text-align:center;padding:20px;color:var(--text-dim)}
+.media-placeholder span{font-size:13px;font-weight:600;color:var(--text-muted)}
+.media-placeholder small{font-size:11px;font-family:'Space Grotesk',sans-serif;letter-spacing:.02em}
+.project-body{padding:24px;display:flex;flex-direction:column;gap:12px;flex:1}
+.project-title{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;letter-spacing:-.01em}
+.project-desc{color:var(--text-muted);font-size:14px;line-height:1.6;flex:1}
+.project-tags{display:flex;flex-wrap:wrap;gap:8px}
+.xp-tag{background:var(--accent-dim);border:1px solid rgba(167,139,250,.15);color:var(--accent-light);font-size:12px;font-weight:500;padding:5px 12px;border-radius:100px}
+.xp-tag.blue{background:var(--sky-dim);border-color:rgba(34,211,238,.15);color:var(--sky)}
+
+.back-row{margin-top:48px;display:flex;justify-content:center}
+
+/* ---------- FOOTER ---------- */
+footer{max-width:1080px;margin:0 auto;padding:0 24px 40px}
+.foot-inner{display:flex;justify-content:space-between;align-items:center;padding:20px 28px;background:var(--surface);border:1px solid var(--border-subtle);border-radius:100px;font-size:13px;color:var(--text-dim);flex-wrap:wrap;gap:12px}
+.foot-inner b{color:var(--accent);letter-spacing:.06em}
+
+/* ---------- REVEAL ---------- */
+.reveal{opacity:0;transform:translateY(20px);transition:opacity .6s var(--ease),transform .6s var(--ease)}
+.reveal.on{opacity:1;transform:translateY(0)}
+.reveal[data-delay="1"]{transition-delay:.06s}
+.reveal[data-delay="2"]{transition-delay:.12s}
+.reveal[data-delay="3"]{transition-delay:.18s}
+.reveal[data-delay="4"]{transition-delay:.24s}
+.reveal[data-delay="5"]{transition-delay:.3s}
+
+/* ---------- RESPONSIVE ---------- */
+@media(max-width:768px){
+  .nav-links{display:none;position:fixed;top:72px;left:16px;right:16px;flex-direction:column;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;z-index:99}
+  .nav-links.open{display:flex}
+  .mobile-toggle{display:flex;align-items:center;justify-content:center}
+  .projects-grid{grid-template-columns:1fr}
+  .page-head{padding:40px 0 8px}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+}
+</style>
+</head>
+<body>
+<div class="ambient"></div>
+
+<nav>
+  <div class="nav-inner">
+    <a class="logo" href="index.html">CALVIN<span>SKUNNIES</span></a>
+    <div class="nav-links" id="navLinks">
+      <a href="index.html">About</a>
+      <a href="index.html#skills">Skills</a>
+      <a href="index.html#experience">Experience</a>
+      <a href="projects.html" class="active">Projects</a>
+      <a href="index.html#contact">Contact</a>
+      <a href="/tdl/tracker">Tracker</a>
+    </div>
+    <button class="mobile-toggle" id="menuBtn" aria-label="Menu">☰</button>
+  </div>
+</nav>
+
+<main>
+  <header class="page-head">
+    <div class="section-label reveal">The Projects</div>
+    <h1 class="section-title reveal" data-delay="1">Things I've built &amp; shipped.</h1>
+    <p class="section-desc reveal" data-delay="2">Dashboards, automation pipelines, and web3 products — with the story behind each one.</p>
+  </header>
+
+  <!-- ============================================================
+       HOW TO ADD A PROJECT:
+       1. Drop your image into assets/projects/ (e.g. project-1.jpg)
+       2. Duplicate a .project-card block below
+       3. Point the <img src> at your file and write the title/desc/tags
+       If the image is missing, a placeholder with the expected path shows.
+       ============================================================ -->
+  <section class="projects-grid">
+
+    <article class="project-card reveal">
+      <div class="project-media">
+        <img src="assets/projects/project-1.jpg" alt="Project 1" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+        <div class="media-placeholder"><span>Project 1 image</span><small>assets/projects/project-1.jpg</small></div>
+      </div>
+      <div class="project-body">
+        <h3 class="project-title">Project One</h3>
+        <p class="project-desc">Describe what this project does, the stack you used, and the result or impact it had.</p>
+        <div class="project-tags">
+          <span class="xp-tag">tag</span>
+          <span class="xp-tag blue">tag</span>
+        </div>
+      </div>
+    </article>
+
+    <article class="project-card reveal" data-delay="1">
+      <div class="project-media">
+        <img src="assets/projects/project-2.jpg" alt="Project 2" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+        <div class="media-placeholder"><span>Project 2 image</span><small>assets/projects/project-2.jpg</small></div>
+      </div>
+      <div class="project-body">
+        <h3 class="project-title">Project Two</h3>
+        <p class="project-desc">Describe what this project does, the stack you used, and the result or impact it had.</p>
+        <div class="project-tags">
+          <span class="xp-tag">tag</span>
+          <span class="xp-tag blue">tag</span>
+        </div>
+      </div>
+    </article>
+
+    <article class="project-card reveal">
+      <div class="project-media">
+        <img src="assets/projects/project-3.jpg" alt="Project 3" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+        <div class="media-placeholder"><span>Project 3 image</span><small>assets/projects/project-3.jpg</small></div>
+      </div>
+      <div class="project-body">
+        <h3 class="project-title">Project Three</h3>
+        <p class="project-desc">Describe what this project does, the stack you used, and the result or impact it had.</p>
+        <div class="project-tags">
+          <span class="xp-tag">tag</span>
+          <span class="xp-tag blue">tag</span>
+        </div>
+      </div>
+    </article>
+
+    <article class="project-card reveal" data-delay="1">
+      <div class="project-media">
+        <img src="assets/projects/project-4.jpg" alt="Project 4" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+        <div class="media-placeholder"><span>Project 4 image</span><small>assets/projects/project-4.jpg</small></div>
+      </div>
+      <div class="project-body">
+        <h3 class="project-title">Project Four</h3>
+        <p class="project-desc">Describe what this project does, the stack you used, and the result or impact it had.</p>
+        <div class="project-tags">
+          <span class="xp-tag">tag</span>
+          <span class="xp-tag blue">tag</span>
+        </div>
+      </div>
+    </article>
+
+  </section>
+
+  <div class="back-row reveal">
+    <a class="btn btn-outline" href="index.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Back home
+    </a>
+  </div>
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <span><b>CALVINSKUNNIES</b> · Data Analyst · Web3 Community · Indonesia</span>
+    <span>© 2026 · @calvinskunnies</span>
+  </div>
+</footer>
+
+<script>
+/* reveal on scroll */
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('on');io.unobserve(e.target);}}),{threshold:.1});
+document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+
+/* mobile menu */
+const menuBtn=document.getElementById('menuBtn');const navLinks=document.getElementById('navLinks');
+menuBtn.addEventListener('click',()=>navLinks.classList.toggle('open'));
+document.querySelectorAll('.nav-links a').forEach(a=>a.addEventListener('click',()=>navLinks.classList.remove('open')));
+</script>
+</body>
+</html>

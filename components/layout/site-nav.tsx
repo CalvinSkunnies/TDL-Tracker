@@ -3,14 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { logout } from "@/app/login/actions";
+import { logout } from "@/app/tdl/login/actions";
 import { cn } from "@/lib/cn";
 import { NotepadMark } from "./notepad-mark";
 import { ThemeToggle } from "./theme-toggle";
 
 const links = [
-  { href: "/tracker", label: "Tasks" },
-  { href: "/design-system", label: "Design system" },
+  { href: "/tdl/tracker", label: "Tasks" },
+  { href: "/tdl/design-system", label: "Design system" },
 ];
 
 const itemClasses =
@@ -31,8 +31,8 @@ export function SiteNav() {
     setOpen(false);
   }
 
-  // Signed-out visitors only ever see /login, so hide the app links there.
-  const signedOutView = pathname === "/login";
+  // Signed-out visitors only ever see /tdl/login, so hide the app links there.
+  const signedOutView = pathname === "/tdl/login";
 
   return (
     <header className="border-line bg-cream-50/85 sticky top-0 z-40 border-b backdrop-blur">
@@ -41,7 +41,7 @@ export function SiteNav() {
         className="mx-auto flex h-16 w-full max-w-4xl items-center justify-between px-5 sm:px-8"
       >
         <Link
-          href="/tracker"
+          href="/tdl/tracker"
           aria-label="Notepad — your tasks"
           className="text-ink hover:text-clay-700 focus-visible:outline-clay-500 flex items-center gap-2.5 transition-colors focus-visible:rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4"
         >

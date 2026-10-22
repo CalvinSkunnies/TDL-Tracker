@@ -11,8 +11,8 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: "Notepad",
     description:
       "A private, offline-capable personal task and workload tracker.",
-    start_url: "/tracker",
-    scope: "/",
+    start_url: "/tdl/tracker",
+    scope: "/tdl/",
     display: "standalone",
     orientation: "portrait-primary",
     background_color: "#faf9f5",

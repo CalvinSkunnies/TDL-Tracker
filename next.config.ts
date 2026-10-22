@@ -20,9 +20,9 @@ function contentSecurityPolicy(): string {
   return [
     "default-src 'self'",
     `script-src ${scriptSrc}`,
-    "style-src 'self' 'unsafe-inline'",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "img-src 'self' data: blob:",
-    "font-src 'self'",
+    "font-src 'self' https://fonts.gstatic.com",
     `connect-src ${connectSrc}`,
     "manifest-src 'self'",
     "worker-src 'self'",
@@ -62,6 +62,29 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
+  },
+  async redirects() {
+    return [
+      // Old tracker URLs from before the portfolio took over the root.
+      { source: "/tracker", destination: "/tdl/tracker", permanent: false },
+      { source: "/login", destination: "/tdl/login", permanent: false },
+      {
+        source: "/design-system",
+        destination: "/tdl/design-system",
+        permanent: false,
+      },
+    ];
+  },
+  async rewrites() {
+    return {
+      // The portfolio is static HTML, kept verbatim in public/portfolio.
+      beforeFiles: [
+        { source: "/", destination: "/portfolio/index.html" },
+        { source: "/index.html", destination: "/portfolio/index.html" },
+        { source: "/projects", destination: "/portfolio/projects.html" },
+        { source: "/projects.html", destination: "/portfolio/projects.html" },
+      ],
+    };
   },
 };
 

@@ -29,7 +29,7 @@ export default function Error({
       </p>
       <div className="mt-6 flex justify-center gap-2">
         <Button onClick={reset}>Try again</Button>
-        <Button variant="secondary" onClick={() => router.push("/tracker")}>
+        <Button variant="secondary" onClick={() => router.push("/tdl/tracker")}>
           Go to tasks
         </Button>
       </div>

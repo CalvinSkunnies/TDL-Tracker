@@ -29,8 +29,15 @@ npm run format        # format all files with Prettier
 npm run format:check  # check formatting without writing changes
 ```
 
-The app lives at **`/tracker`** (`/` redirects there). `/design-system` previews
-the UI primitives.
+One Next.js app now serves two things:
+
+- the public portfolio at **`/`** and **`/projects`** (static HTML kept verbatim
+  in `public/portfolio/`, mapped by rewrites in `next.config.ts`)
+- the private tracker at **`/tdl/tracker`** (`/tdl` redirects there), with
+  **`/tdl/design-system`** previewing the UI primitives
+
+All tracker URLs live under `/tdl`, so the portfolio owns the root of the domain
+and the gate only has to protect one prefix.
 
 ### Environment variables
 
@@ -55,7 +62,7 @@ shadows and motion live in the `@theme` block in `app/globals.css`.
   Badge, Modal, Tabs). Import from `@/components/ui`.
 - Layout shell: `components/layout/site-nav.tsx` and the container in
   `app/layout.tsx`. The nav collapses to a menu button on small screens.
-- Review everything at `/design-system` while running `npm run dev`.
+- Review everything at `/tdl/design-system` while running `npm run dev`.
 - Fonts are self-hosted through `@fontsource-variable/*` and `next/font/local`.
 - Dark mode: the same token names are remapped under `[data-theme="dark"]`.
   The nav toggle stores the choice; an inline script applies it before first
@@ -63,7 +70,7 @@ shadows and motion live in the `@theme` block in `app/globals.css`.
 
 ## Task tracker
 
-The tracker (`/tracker`) keeps everything in this browser's `localStorage`;
+The tracker (`/tdl/tracker`) keeps everything in this browser's `localStorage`;
 nothing is sent anywhere.
 
 - **Data model:** `lib/types.ts`. Domain logic (validation, recurrence,
@@ -105,16 +112,18 @@ nothing is sent anywhere.
 
 ## Private access gate
 
-Every route except `/login` requires a signed session cookie. The PWA files the
-browser must fetch without a session (`/sw.js`, `/manifest.webmanifest`,
+Every route under `/tdl` except `/tdl/login` requires a signed session cookie.
+The portfolio at `/` and `/projects` is public, and the PWA files the browser
+must fetch without a session (`/sw.js`, `/manifest.webmanifest`,
 `/offline.html`) and static assets are excluded from the gate.
 
 - `proxy.ts` runs before any page renders and redirects visitors without a
-  valid cookie to `/login`. (Next.js 16 renamed `middleware.ts` to `proxy.ts`;
-  it is the same feature, and it runs on the Node.js runtime.)
-- `/login` takes one passphrase (`APP_PASSPHRASE`). It is compared in constant
-  time; wrong guesses are delayed by 700 ms, and five failures from the same IP
-  within 15 minutes trigger a 15-minute lockout (`lib/login-throttle.ts`).
+  valid cookie to `/tdl/login`. (Next.js 16 renamed `middleware.ts` to
+  `proxy.ts`; it is the same feature, and it runs on the Node.js runtime.)
+- `/tdl/login` takes one passphrase (`APP_PASSPHRASE`). It is compared in
+  constant time; wrong guesses are delayed by 700 ms, and five failures from the
+  same IP within 15 minutes trigger a 15-minute lockout
+  (`lib/login-throttle.ts`).
 - On success the server sets an HS256 JWT (via `jose`) signed with
   `AUTH_SECRET`, valid for 7 days. Cookie flags: `HttpOnly`, `Secure` (in
   production), `SameSite=Strict`, `Path=/`, and the `__Host-` prefix in
@@ -144,24 +153,28 @@ Generate a secret with `openssl rand -base64 32`.
 | "Sign-in isn't configured on this server yet." | `AUTH_SECRET` (32+ chars) and/or `APP_PASSPHRASE` is missing at runtime. Check **Vercel → Settings → Environment Variables** for both, then **redeploy** — env changes only apply to new deployments. The server log names the exact variable: Vercel → **Logs** → look for `[auth] sign-in unavailable: …`. |
 | "That passphrase isn't right." | The value typed differs from `APP_PASSPHRASE` (watch for stray spaces, and note the comparison is exact). |
 | "Too many attempts." | Five failures from your IP triggered the 15-minute lockout. Wait it out, or restart the deployment to reset the in-memory counter. |
-| Redirected to `/login` on every visit | The session cookie was not stored or was dropped: it requires HTTPS (`Secure`) and the `__Host-` prefix, so use the production domain, not `http://localhost`. |
+| Redirected to `/tdl/login` on every visit | The session cookie was not stored or was dropped: it requires HTTPS (`Secure`) and the `__Host-` prefix, so use the production domain, not `http://localhost`. |
 
-## Private URL & routing strategy
+## Portfolio and URL layout
 
-The tracker is served on the main site at **`/tracker`**, behind the middleware
-gate. This is the option this repo implements (option **a**).
+The portfolio is a static site copied verbatim into `public/portfolio/`, with its
+assets in `public/assets/`. `next.config.ts` rewrites `/` and `/index.html` to
+`portfolio/index.html`, and `/projects` and `/projects.html` to
+`portfolio/projects.html`. Its nav has a **Tracker** link to `/tdl/tracker`.
 
-**Tradeoffs**
+The tracker occupies `/tdl/*`:
 
-- **Option A — `/tracker` on the main site (chosen).** One project, one set of
-  env vars, one deploy, one login. The gate protects every route. The URL is
-  long (`your-project.vercel.app/tracker`) and the tracker shares the domain
-  with `/design-system`.
-- **Option B — a separate Vercel project.** Gives a distinct
-  `*.vercel.app` URL (e.g. `calvinskunnies-todo.vercel.app`) and independent
-  deploys, but doubles the configuration (two projects, two sets of env vars,
-  two logins) and splits the codebase. Choose it when you want the tracker to
-  have its own address without owning a domain.
+| Path | What it is |
+| --- | --- |
+| `/tdl` | Redirects to `/tdl/tracker` |
+| `/tdl/tracker` | The task app (behind the gate) |
+| `/tdl/login` | Passphrase form |
+| `/tdl/design-system` | UI primitives reference (behind the gate) |
+
+Because the tracker no longer owns the domain root, the portfolio deployment can
+be retired: point the `calvinskunnies.vercel.app` project (or your custom
+domain) at this Next.js project instead. The old tracker deployment URL still
+works at `/tdl/tracker` until it is deleted.
 
 You **cannot** create subdomains of `*.vercel.app` — Vercel owns that domain. A
 name like `todo.yourdomain.com` requires owning a custom domain.
@@ -179,7 +192,8 @@ name like `todo.yourdomain.com` requires owning a custom domain.
 3. For an apex domain (`yourdomain.com`) use an **A** record to `76.76.21.21`
    instead, or point the nameservers at Vercel.
 4. Wait for DNS to propagate; Vercel issues a TLS certificate automatically.
-   The app then lives at `https://todo.yourdomain.com/tracker`.
+   The portfolio then lives at `https://todo.yourdomain.com` and the tracker at
+   `https://todo.yourdomain.com/tdl/tracker`.
 
 Set `NEXT_PUBLIC_APP_URL` (optional) to the custom domain for your own
 reference; the app does not require it.
@@ -187,7 +201,7 @@ reference; the app does not require it.
 ## PWA / offline
 
 - `app/manifest.ts` serves `/manifest.webmanifest` (name, theme colors,
-  `start_url: /tracker`). `app/icon.svg` is the app icon.
+  `start_url: /tdl/tracker`). `app/icon.svg` is the app icon.
 - `public/sw.js` caches the app shell: navigations are network-first with an
   offline fallback (`public/offline.html`); other same-origin GETs use
   stale-while-revalidate.
@@ -220,8 +234,8 @@ devices and is lost if you clear site data.
 
 ## Security checklist
 
-- [x] Middleware/proxy protects every route except `/login` and the public PWA
-      assets.
+- [x] Middleware/proxy protects every `/tdl` route except `/tdl/login`; the
+      portfolio at `/` stays public, as do the PWA assets.
 - [x] Session cookie is `HttpOnly`, `Secure` (prod), `SameSite=Strict`, `Path=/`
       with the `__Host-` prefix in production.
 - [x] Login has a constant-time compare, a fixed delay, and an IP lockout after
@@ -265,6 +279,10 @@ After the first deploy:
   Locally, put the same two lines in `.env.local`.
 - Environment variables can be changed later under **Project Settings >
   Environment Variables**; redeploy for changes to take effect.
+- **Moving `calvinskunnies.vercel.app`:** in the old portfolio project, open
+  **Settings > Domains**, remove the domain, then add it to this project. The
+  portfolio is now served from this project's `/`, so the old static deployment
+  can be deleted once the domain resolves here.
 
 ### Manual checklist (things only you can do)
 
@@ -273,6 +291,6 @@ After the first deploy:
    Preview, then redeploy.
 2. **Domain DNS** (optional) — add the custom domain in Vercel and the
    `CNAME`/`A` record at your DNS provider as described above.
-3. **First login** — open `https://<your-project>.vercel.app/tracker`, get
-   redirected to `/login`, enter the passphrase.
+3. **First login** — open `https://<your-project>.vercel.app/tdl/tracker`, get
+   redirected to `/tdl/login`, enter the passphrase.
 4. **Export a backup** once you have data, and again before clearing site data.

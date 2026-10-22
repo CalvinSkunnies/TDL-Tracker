@@ -2,37 +2,37 @@ import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/session";
 
 /**
- * The auth gate. Runs before routing, so a protected page is never rendered
- * (or served from the static cache) for an anonymous visitor.
+ * The auth gate for the tracker. Runs before routing, so a protected page is
+ * never rendered (or served from the static cache) for an anonymous visitor.
  *
- * Next.js 16 renamed `middleware.ts` to `proxy.ts`; it is the same feature.
- * Every route is protected except /login and static assets (see matcher).
+ * The portfolio at "/" is public; only /tdl/* is private. Next.js 16 renamed
+ * `middleware.ts` to `proxy.ts`; it is the same feature.
  */
+const LOGIN_PATH = "/tdl/login";
+const HOME_PATH = "/tdl/tracker";
+
 export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
   const authed = await verifySessionToken(
     request.cookies.get(SESSION_COOKIE)?.value,
   );
 
-  if (pathname === "/login") {
-    // Already signed in: nothing to do on the login page.
+  if (pathname === LOGIN_PATH) {
+    // Already signed in: go straight to the tracker.
     return authed
-      ? NextResponse.redirect(new URL("/", request.url))
+      ? NextResponse.redirect(new URL(HOME_PATH, request.url))
       : NextResponse.next();
   }
 
   if (authed) return NextResponse.next();
 
-  const loginUrl = new URL("/login", request.url);
-  if (pathname !== "/") loginUrl.searchParams.set("next", pathname + search);
+  const loginUrl = new URL(LOGIN_PATH, request.url);
+  if (pathname !== "/tdl") loginUrl.searchParams.set("next", pathname + search);
   return NextResponse.redirect(loginUrl);
 }
 
 export const config = {
-  // Everything except Next's static output, the PWA files the browser fetches
-  // without a session (manifest and service worker), and public assets. Those
-  // must stay public or the app could not be installed or run offline.
-  matcher: [
-    "/((?!_next/static|_next/image|favicon\\.ico|sw\\.js|manifest\\.webmanifest|offline\\.html|robots\\.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?)$).*)",
-  ],
+  // Only the tracker is gated. Keep Next's build output public, or the login
+  // page could not load its own JS and CSS.
+  matcher: ["/tdl", "/tdl/((?!_next/static|_next/image).*)"],
 };
