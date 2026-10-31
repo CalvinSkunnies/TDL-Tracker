@@ -671,11 +671,58 @@ export function importData(text: string): boolean {
     : [];
 
   commit({
-    version: SCHEMA_VERSION,
-    tasks,
-    templates,
-    journal: normalizeJournal(p.journal),
-    settings: normalizeSettings(p.settings),
-  });
-  return true;
-}
+      version: SCHEMA_VERSION,
+      tasks,
+      templates,
+      journal: normalizeJournal(p.journal),
+      settings: normalizeSettings(p.settings),
+    });
+    return true;
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Drag-and-drop reordering                                             */
+  /* ------------------------------------------------------------------ */
+
+  /**
+   * Reorders tasks within a status group.
+   * Called after drag-and-drop to persist the new order.
+   */
+  export function reorderTasks(status: TaskStatus, taskIds: string[]): boolean {
+    const state = currentState();
+    const found = taskIds.every((id) => state.tasks.some((t) => t.id === id));
+    if (!found) return false;
+
+    const orderMap = new Map(taskIds.map((id, i) => [id, i]));
+
+    // Separate tasks by status
+    const tasksByStatus: Record<TaskStatus, Task[]> = {
+      todo: [],
+      "in-progress": [],
+      done: [],
+    };
+
+    for (const task of state.tasks) {
+      if (tasksByStatus[task.status]) {
+        tasksByStatus[task.status].push(task);
+      }
+    }
+
+    // Reorder the specific status group
+    tasksByStatus[status] = taskIds
+      .map((id) => state.tasks.find((t) => t.id === id))
+      .filter((t): t is Task => t !== null);
+
+    // Flatten back into a single array, sorted by status then position
+    const sortedTasks = [
+      ...tasksByStatus.todo,
+      ...tasksByStatus["in-progress"],
+      ...tasksByStatus.done,
+    ];
+
+    commit({
+      ...state,
+      tasks: sortedTasks,
+    });
+    return true;
+  }
