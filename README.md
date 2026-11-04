@@ -34,7 +34,8 @@ One Next.js app now serves two things:
 - the public portfolio at **`/`** and **`/projects`** (static HTML kept verbatim
   in `public/portfolio/`, mapped by rewrites in `next.config.ts`)
 - the private tracker at **`/tdl/tracker`** (`/tdl` redirects there), with
-  **`/tdl/design-system`** previewing the UI primitives
+  **`/tdl/journal`** for daily reflections and **`/tdl/design-system`**
+  previewing the UI primitives
 
 All tracker URLs live under `/tdl`, so the portfolio owns the root of the domain
 and the gate only has to protect one prefix.
@@ -96,17 +97,24 @@ nothing is sent anywhere.
 - **Time tracking:** each task has an estimate and a running stopwatch; when
   stopped, elapsed time is banked into the task's actual minutes, and the row
   flags whether it ran over or under the estimate.
-- **Daily capacity:** today's open-task estimates are totalled against a
-  configurable hours target (`settings.dailyCapacityHours`).
+- **Capacity:** the daily hours target (`settings.dailyCapacityHours`) still
+  feeds the overload warning in Insights; the standalone load card was removed.
 - **Insights:** `lib/insights.ts` derives completion rate, focused time per
   day, estimate-vs-actual, the current completion streak and overload warnings
   for a 7- or 30-day window. Charts are dependency-free inline SVG
   (`components/tasks/charts.tsx`).
-- **Journal:** one free-form end-of-day entry per date, keyed by `YYYY-MM-DD`.
+- **Journal:** a dedicated page at `/tdl/journal` with one free-form entry per
+  date, keyed by `YYYY-MM-DD`.
+- **Drag to reorder:** drag a task within its status group, or focus the grip
+  and press ↑/↓. The manual order is saved on the task (`manualOrder`) and
+  wins over the automatic priority/due-date sort.
+- **Adding tasks:** one form collects title, description, start date and
+  deadline; the inline field is for title-only adds.
 - **Feedback:** actions raise toasts (`components/tasks/toaster.tsx`); a
   route-level error boundary (`app/error.tsx`) keeps the UI recoverable.
-- **Keyboard:** `Cmd/Ctrl+K` opens the command palette, `n` focuses quick add,
-  `/` focuses search, Enter on a title opens the editor, Escape closes dialogs.
+- **Keyboard:** `Cmd/Ctrl+K` opens the command palette, `n` opens the add-task
+  form, `/` focuses search, ↑/↓ on a task grip reorders, Enter on a title opens
+  the editor, Escape closes dialogs.
 - Data is per browser and per origin; clearing site data erases it. See
   [Backup & export](#backup--export).
 
@@ -160,7 +168,8 @@ Generate a secret with `openssl rand -base64 32`.
 The portfolio is a static site copied verbatim into `public/portfolio/`, with its
 assets in `public/assets/`. `next.config.ts` rewrites `/` and `/index.html` to
 `portfolio/index.html`, and `/projects` and `/projects.html` to
-`portfolio/projects.html`. Its nav has a **Tracker** link to `/tdl/tracker`.
+`portfolio/projects.html`. The nav keeps the portfolio public; the tracker is
+reached directly at `/tdl/tracker`.
 
 The tracker occupies `/tdl/*`:
 
@@ -168,6 +177,7 @@ The tracker occupies `/tdl/*`:
 | --- | --- |
 | `/tdl` | Redirects to `/tdl/tracker` |
 | `/tdl/tracker` | The task app (behind the gate) |
+| `/tdl/journal` | End-of-day journal (behind the gate) |
 | `/tdl/login` | Passphrase form |
 | `/tdl/design-system` | UI primitives reference (behind the gate) |
 

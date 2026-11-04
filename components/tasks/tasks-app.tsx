@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui";
 import { downloadTextFile, prefersReducedMotion } from "@/lib/backup";
 import type { SaveOptions } from "@/lib/store";
@@ -12,7 +12,6 @@ import { CommandPalette } from "./command-palette";
 import { DataControls } from "./data-controls";
 import { DeleteDialog } from "./delete-dialog";
 import { FilterBar } from "./filter-bar";
-import { Journal } from "./journal";
 import { STATUS_LABELS } from "./labels";
 import { QuickAdd } from "./quick-add";
 import { EmptyState, LoadingState, NoResultsState } from "./states";
@@ -54,23 +53,20 @@ function toggleTheme() {
 export function TasksApp() {
   const {
     tasks,
-    journal,
     settings,
     isLoading,
     storageProblem,
     addTask,
     saveTask,
     deleteTask,
+    reorderTasks,
     deleteSeries,
     toggleStatus,
     startTimer,
     stopTimer,
-    setDailyCapacityHours,
-    setJournalEntry,
     exportData,
     importData,
     getTemplate,
-    reorderTasks,
     filters,
     setFilters,
     resetFilters,
@@ -87,63 +83,27 @@ export function TasksApp() {
   const [deleting, setDeleting] = useState<Task | null>(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
-  const [addTitle, setAddTitle] = useState("");
+  const [dragging, setDragging] = useState<{ id: string; status: TaskStatus } | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
 
-  const pendingFocus = useRef<
-    {
-      id: string;
-      target: "checkbox" | "status" | "open";
-    } | null
-  >(null);
+  /**
+   * A row that changes group is re-created, which would drop keyboard focus.
+   * Handlers note which control to refocus; the effect below applies it once
+   * the list has re-rendered.
+   */
+  const pendingFocus = useRef<{
+    id: string;
+    target: "checkbox" | "status" | "open" | "handle";
+  } | null>(null);
 
   const quickAddRef = useRef<HTMLInputElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+  /** Drag source kept in a ref so a fast drop still sees it. */
+  const dragSource = useRef<{ id: string; status: TaskStatus } | null>(null);
 
   const editing = tasks.find((task) => task.id === editingId) ?? null;
   const editingTemplate = editing ? getTemplate(editing.seriesId) : null;
   const openCount = counts.todo + counts["in-progress"];
-
-  // Drag-and-drop handlers
-  const dragOverRef = useRef<HTMLElement | null>(null);
-  const dragOverIndexRef = useRef<number>(0);
-  const dragOverStatusRef = useRef<TaskStatus | null>(null);
-
-  function handleDragStart(event: React.DragEvent<HTMLLIElement>, taskId: string, status: TaskStatus) {
-    event.dataTransfer.setData("text/plain", taskId);
-    dragOverRef.current = event.currentTarget;
-    dragOverStatusRef.current = status;
-  }
-
-  function handleDragEnter(event: React.DragEvent<HTMLLIElement>, index: number, status: TaskStatus) {
-    if (dragOverRef.current === event.currentTarget) return;
-    event.preventDefault();
-    dragOverRef.current = event.currentTarget;
-    dragOverIndexRef.current = index;
-    dragOverStatusRef.current = status;
-  }
-
-  function handleDragOver(event: React.DragEvent<HTMLLIElement>) {
-    event.preventDefault();
-  }
-
-  function handleDrop(event: React.DragEvent<HTMLLIElement>, targetTaskId: string, status: TaskStatus) {
-    event.preventDefault();
-    const sourceTaskId = event.dataTransfer.getData("text/plain");
-    if (!sourceTaskId || sourceTaskId === targetTaskId) return;
-
-    const currentTasks = groups[status] ?? [];
-    const sorted = [...currentTasks];
-    const sourceIndex = sorted.findIndex((t) => t.id === sourceTaskId);
-    const targetIndex = sorted.findIndex((t) => t.id === targetTaskId);
-
-    if (sourceIndex === -1 || targetIndex === -1) return;
-
-    const [moved] = sorted.splice(sourceIndex, 1);
-    sorted.splice(targetIndex, 0, moved);
-
-    const taskIds = sorted.map((t) => t.id);
-    reorderTasks(status, taskIds);
-  }
 
   useEffect(() => {
     const pending = pendingFocus.current;
@@ -156,7 +116,7 @@ export function TasksApp() {
       ?.focus();
   });
 
-  // Keyboard shortcuts: Cmd/Ctrl+K palette, "/" search.
+  // Keyboard shortcuts: Cmd/Ctrl+K palette, "n" new task, "/" search.
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if (event.defaultPrevented) return;
@@ -171,7 +131,10 @@ export function TasksApp() {
       if (event.metaKey || event.ctrlKey || event.altKey) return;
       if (isTypingTarget(event.target)) return;
       if (document.querySelector("dialog[open]")) return;
-      if (event.key === "/") {
+      if (event.key === "n") {
+        event.preventDefault();
+        setAddOpen(true);
+      } else if (event.key === "/") {
         event.preventDefault();
         searchRef.current?.focus();
       }
@@ -181,25 +144,25 @@ export function TasksApp() {
   }, []);
 
   function focusQuickAddSoon() {
+    // After the dialog has finished closing and restoring focus.
     window.setTimeout(() => quickAddRef.current?.focus(), 50);
   }
 
   function handleAdd(title: string): boolean {
     const task = addTask({ title });
     if (!task) return false;
-    notify(`Added "${task.title}".`, "success");
+    notify(`Added “${task.title}”.`, "success");
     return true;
   }
 
-  function openAddForm(title = "") {
-    setAddTitle(title);
+  function openAddForm() {
     setAddOpen(true);
   }
 
   function handleCreate(input: NewTask) {
     const task = addTask(input);
     setAddOpen(false);
-    if (task) notify(`Added "${task.title}".`, "success");
+    if (task) notify(`Added “${task.title}”.`, "success");
   }
 
   function handleToggle(task: Task) {
@@ -208,8 +171,8 @@ export function TasksApp() {
     if (updated) {
       notify(
         updated.status === "done"
-          ? `Completed "${task.title}".`
-          : `Reopened "${task.title}".`,
+          ? `Completed “${task.title}”.`
+          : `Reopened “${task.title}”.`,
         updated.status === "done" ? "success" : "info",
       );
     }
@@ -218,7 +181,7 @@ export function TasksApp() {
   function handleStatusChange(task: Task, status: TaskStatus) {
     saveTask(task.id, { status });
     pendingFocus.current = { id: task.id, target: "status" };
-    notify(`Moved "${task.title}" to ${STATUS_LABELS[status]}.`);
+    notify(`Moved “${task.title}” to ${STATUS_LABELS[status]}.`);
   }
 
   function handleSave(id: string, patch: TaskPatch, options: SaveOptions) {
@@ -238,8 +201,8 @@ export function TasksApp() {
     setDeleting(null);
     notify(
       stopsSeries
-        ? `Deleted "${task.title}" and stopped the series.`
-        : `Deleted "${task.title}".$`,
+        ? `Deleted “${task.title}” and stopped the series.`
+        : `Deleted “${task.title}”.`,
     );
     focusQuickAddSoon();
   }
@@ -249,16 +212,80 @@ export function TasksApp() {
     setDeleting(task);
   }
 
+  /** Visible order for one group, which is what drag-and-drop reorders. */
+  function groupIds(status: TaskStatus): string[] {
+    return groups[status].map((task) => task.id);
+  }
+
+  function moveTask(task: Task, direction: -1 | 1) {
+    const ids = groupIds(task.status);
+    const from = ids.indexOf(task.id);
+    const to = from + direction;
+    if (from < 0 || to < 0 || to >= ids.length) return;
+    const next = [...ids];
+    [next[from], next[to]] = [next[to], next[from]];
+    if (reorderTasks(next)) {
+      pendingFocus.current = { id: task.id, target: "handle" };
+    }
+  }
+
+  function handleDragStart(task: Task) {
+    dragSource.current = { id: task.id, status: task.status };
+    setDragging(dragSource.current);
+    setDragOverId(null);
+  }
+
+  function handleDragOver(task: Task) {
+    const source = dragSource.current;
+    if (!source || source.status !== task.status || source.id === task.id) {
+      if (dragOverId !== null) setDragOverId(null);
+      return;
+    }
+    if (dragOverId !== task.id) setDragOverId(task.id);
+  }
+
+  function handleDrop(task: Task) {
+    const source = dragSource.current;
+    dragSource.current = null;
+    setDragging(null);
+    setDragOverId(null);
+    if (!source || source.status !== task.status) return;
+
+    const ids = groupIds(task.status);
+    const from = ids.indexOf(source.id);
+    const to = ids.indexOf(task.id);
+    if (from < 0 || to < 0 || from === to) return;
+
+    const next = [...ids];
+    const [moved] = next.splice(from, 1);
+    next.splice(to, 0, moved);
+    if (reorderTasks(next)) {
+      pendingFocus.current = { id: moved, target: "handle" };
+    }
+  }
+
+  function handleDragEnd() {
+    dragSource.current = null;
+    setDragging(null);
+    setDragOverId(null);
+  }
+
   const commands = [
     {
       id: "add",
-      label: "Add task",
+      label: "Add task with details",
+      hint: "N",
       run: () => openAddForm(),
+    },
+    {
+      id: "quick-add",
+      label: "Quick add (title only)",
+      run: () => quickAddRef.current?.focus(),
     },
     {
       id: "search",
       label: "Search tasks",
-      hint: "⌘K / Ctrl+K",
+      hint: "/",
       run: () => searchRef.current?.focus(),
     },
     {
@@ -290,7 +317,7 @@ export function TasksApp() {
           <h1 className="font-display text-4xl font-medium tracking-tight sm:text-5xl">
             Your tasks
           </h1>
-          <p className="text-ink-muted mt-2 text-base" aria-live="polite">
+          <p className="text-ink-muted mt-2 text-base" aria-live="off">
             {isLoading
               ? " "
               : tasks.length === 0
@@ -300,7 +327,7 @@ export function TasksApp() {
         </div>
         {!isLoading && (
           <div className="flex flex-wrap items-center justify-end gap-2">
-            <Button size="sm" onClick={() => openAddForm()}>
+            <Button size="sm" onClick={openAddForm}>
               Add task
             </Button>
             <DataControls
@@ -323,12 +350,13 @@ export function TasksApp() {
 
       <QuickAdd
         onAdd={handleAdd}
-        onDetails={openAddForm}
         disabled={isLoading}
         inputRef={quickAddRef}
       />
       <p className="text-ink-muted mt-2 text-xs">
-        Press <kbd className="font-sans font-semibold">/</kbd> to search.
+        <kbd className="font-sans font-semibold">n</kbd> for the full form,{" "}
+        <kbd className="font-sans font-semibold">/</kbd> to search,{" "}
+        <kbd className="font-sans font-semibold">⌘K</kbd> for commands.
       </p>
 
       {!isLoading && tasks.length > 0 && (
@@ -355,53 +383,49 @@ export function TasksApp() {
         ) : null}
 
         {showList && (
-          <div className="flex flex-col gap-9">
+          <div className="flex flex-col gap-8">
             {GROUP_ORDER.filter((status) => groups[status].length > 0).map(
-              (status) => {
-                const statusTasks = groups[status];
-                return (
-                  <section key={status} aria-labelledby={`group-${status}`}>
-                    <h2
-                      id={`group-${status}`}
-                      className="font-display mb-3 flex items-baseline gap-2 text-xl font-medium tracking-tight"
-                    >
-                      {STATUS_LABELS[status]}
-                      <span className="text-ink-muted font-sans text-sm tabular-nums">
-                        {statusTasks.length}
-                      </span>
-                    </h2>
-                    <ul className="flex flex-col gap-2.5">
-                      {statusTasks.map((task, index) => (
-                        <div
-                          key={task.id}
-                          draggable
-                          onDragStart={(e) => handleDragStart(e, task.id, status)}
-                          onDragEnter={(e) => handleDragEnter(e, index, status)}
-                          onDragOver={handleDragOver}
-                          onDrop={(e) => handleDrop(e, task.id, status)}
-                        >
-                          <TaskRow
-                            task={task}
-                            today={today}
-                            recurrence={
-                              task.seriesId
-                                ? (getTemplate(task.seriesId)?.recurrence ?? null)
-                                : null
-                            }
-                            onToggle={handleToggle}
-                            onOpen={(t) => setEditingId(t.id)}
-                            onStatusChange={handleStatusChange}
-                            onStartTimer={(t) => startTimer(t.id)}
-                            onStopTimer={(t) => stopTimer(t.id)}
-                            onDelete={requestDelete}
-                            onTagClick={(tag) => setFilters({ tag })}
-                          />
-                        </div>
-                      ))}
-                    </ul>
-                  </section>
-                );
-              }
+              (status) => (
+                <section key={status} aria-labelledby={`group-${status}`}>
+                  <h2
+                    id={`group-${status}`}
+                    className="font-display mb-3 flex items-baseline gap-2 text-xl font-medium tracking-tight"
+                  >
+                    {STATUS_LABELS[status]}
+                    <span className="text-ink-muted font-sans text-sm tabular-nums">
+                      {groups[status].length}
+                    </span>
+                  </h2>
+                  <ul className="flex flex-col gap-2">
+                    {groups[status].map((task) => (
+                      <TaskRow
+                        key={task.id}
+                        task={task}
+                        today={today}
+                        recurrence={
+                          task.seriesId
+                            ? (getTemplate(task.seriesId)?.recurrence ?? null)
+                            : null
+                        }
+                        dragging={dragging?.id === task.id}
+                        dragOver={dragOverId === task.id}
+                        onDragStart={handleDragStart}
+                        onDragOver={handleDragOver}
+                        onDrop={handleDrop}
+                        onDragEnd={handleDragEnd}
+                        onMove={moveTask}
+                        onToggle={handleToggle}
+                        onOpen={(t) => setEditingId(t.id)}
+                        onStatusChange={handleStatusChange}
+                        onStartTimer={(t) => startTimer(t.id)}
+                        onStopTimer={(t) => stopTimer(t.id)}
+                        onDelete={requestDelete}
+                        onTagClick={(tag) => setFilters({ tag })}
+                      />
+                    ))}
+                  </ul>
+                </section>
+              ),
             )}
           </div>
         )}
@@ -413,15 +437,8 @@ export function TasksApp() {
         </div>
       )}
 
-      {!isLoading && (
-        <div className="mt-12">
-          <Journal today={today} entries={journal} onChange={setJournalEntry} />
-        </div>
-      )}
-
       <AddTaskDialog
         open={addOpen}
-        initialTitle={addTitle}
         onClose={() => setAddOpen(false)}
         onCreate={handleCreate}
       />

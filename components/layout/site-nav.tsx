@@ -10,6 +10,7 @@ import { ThemeToggle } from "./theme-toggle";
 
 const links = [
   { href: "/tdl/tracker", label: "Tasks" },
+  { href: "/tdl/journal", label: "Journal" },
   { href: "/tdl/design-system", label: "Design system" },
 ];
 

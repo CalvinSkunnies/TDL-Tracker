@@ -124,6 +124,7 @@ export function createTask(input: NewTask, now = new Date()): Task | null {
     completedAt: status === "done" ? stamp : null,
     dueDate: dateOnlyOrNull(input.dueDate),
     startDate: dateOnlyOrNull(input.startDate),
+    manualOrder: null,
     priority: oneOf(TASK_PRIORITIES, input.priority, "medium"),
     tags: normalizeTags(input.tags ?? []),
     estimateMinutes: minutesOrNull(input.estimateMinutes),
@@ -198,6 +199,10 @@ export function normalizeTask(raw: unknown): Task | null {
       status === "done" ? isoOr(r.completedAt, isoOr(r.updatedAt, now)) : null,
     dueDate: dateOnlyOrNull(r.dueDate),
     startDate: dateOnlyOrNull(r.startDate),
+    manualOrder:
+      typeof r.manualOrder === "number" && Number.isFinite(r.manualOrder)
+        ? r.manualOrder
+        : null,
     priority: oneOf(TASK_PRIORITIES, r.priority, "medium"),
     tags: Array.isArray(r.tags) ? normalizeTags(r.tags) : [],
     estimateMinutes: minutesOrNull(r.estimateMinutes),
@@ -378,8 +383,22 @@ export function filterTasks(tasks: Task[], filters: TaskFilters): Task[] {
 
 const PRIORITY_RANK = { high: 0, medium: 1, low: 2 } as const;
 
-/** Open tasks: priority, then soonest due date, then oldest first. */
+/**
+ * A drag assigns every task in the group a manual position, so those win over
+ * the automatic order. New tasks (null) fall below the arranged ones.
+ */
+function compareManual(a: Task, b: Task): number | null {
+  if (a.manualOrder === null && b.manualOrder === null) return null;
+  return (
+    (a.manualOrder ?? Number.MAX_SAFE_INTEGER) -
+    (b.manualOrder ?? Number.MAX_SAFE_INTEGER)
+  );
+}
+
+/** Open tasks: manual order, then priority, soonest due date, oldest first. */
 function compareOpen(a: Task, b: Task): number {
+  const manual = compareManual(a, b);
+  if (manual !== null) return manual;
   return (
     PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority] ||
     (a.dueDate ?? "9999-99-99").localeCompare(b.dueDate ?? "9999-99-99") ||
@@ -387,8 +406,10 @@ function compareOpen(a: Task, b: Task): number {
   );
 }
 
-/** Finished tasks: most recently completed first. */
+/** Finished tasks: manual order, then most recently completed first. */
 function compareDone(a: Task, b: Task): number {
+  const manual = compareManual(a, b);
+  if (manual !== null) return manual;
   return (b.completedAt ?? "").localeCompare(a.completedAt ?? "");
 }
 

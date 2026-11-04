@@ -26,6 +26,8 @@ export interface Task {
   dueDate: string | null;
   /** Calendar date work is planned to start, "YYYY-MM-DD", or null. */
   startDate: string | null;
+  /** Manual position within its status group; null means sort automatically. */
+  manualOrder: number | null;
   priority: TaskPriority;
   /** Lowercase, trimmed, de-duplicated. */
   tags: string[];

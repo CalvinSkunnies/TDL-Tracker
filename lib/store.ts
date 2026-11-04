@@ -40,7 +40,7 @@ import type {
 
 export const STORAGE_KEY = "tdl-tracker:data";
 const BACKUP_KEY = `${STORAGE_KEY}:backup`;
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 type RawState = {
   version: number;
@@ -116,6 +116,16 @@ const migrations: Record<number, Migration> = {
     tasks: state.tasks.map((raw) =>
       typeof raw === "object" && raw !== null
         ? { startDate: null, ...(raw as Record<string, unknown>) }
+        : raw,
+    ),
+  }),
+  // v3 → v4: tasks gained a manual drag order (null when never arranged).
+  3: (state) => ({
+    ...state,
+    version: 4,
+    tasks: state.tasks.map((raw) =>
+      typeof raw === "object" && raw !== null
+        ? { manualOrder: null, ...(raw as Record<string, unknown>) }
         : raw,
     ),
   }),
@@ -549,6 +559,30 @@ export function saveTask(
   return task;
 }
 
+/**
+ * Saves a manual order for the tasks in `orderedIds` (one visible group, in
+ * display order). Positions are stored on the tasks themselves so the order
+ * survives reloads; tasks that were never arranged keep sorting automatically
+ * and fall below the arranged ones.
+ */
+export function reorderTasks(orderedIds: string[]): boolean {
+  if (orderedIds.length < 2) return false;
+  const state = currentState();
+  const positions = new Map(orderedIds.map((id, index) => [id, index]));
+
+  let changed = false;
+  const tasks = state.tasks.map((task) => {
+    const position = positions.get(task.id);
+    if (position === undefined || task.manualOrder === position) return task;
+    changed = true;
+    return { ...task, manualOrder: position };
+  });
+
+  if (!changed) return false;
+  commit({ ...state, tasks });
+  return true;
+}
+
 /** Removes a single instance. Its series keeps generating. */
 export function deleteTask(id: string): boolean {
   const state = currentState();
@@ -671,58 +705,11 @@ export function importData(text: string): boolean {
     : [];
 
   commit({
-      version: SCHEMA_VERSION,
-      tasks,
-      templates,
-      journal: normalizeJournal(p.journal),
-      settings: normalizeSettings(p.settings),
-    });
-    return true;
-  }
-
-  /* ------------------------------------------------------------------ */
-  /* Drag-and-drop reordering                                             */
-  /* ------------------------------------------------------------------ */
-
-  /**
-   * Reorders tasks within a status group.
-   * Called after drag-and-drop to persist the new order.
-   */
-  export function reorderTasks(status: TaskStatus, taskIds: string[]): boolean {
-    const state = currentState();
-    const found = taskIds.every((id) => state.tasks.some((t) => t.id === id));
-    if (!found) return false;
-
-    const orderMap = new Map(taskIds.map((id, i) => [id, i]));
-
-    // Separate tasks by status
-    const tasksByStatus: Record<TaskStatus, Task[]> = {
-      todo: [],
-      "in-progress": [],
-      done: [],
-    };
-
-    for (const task of state.tasks) {
-      if (tasksByStatus[task.status]) {
-        tasksByStatus[task.status].push(task);
-      }
-    }
-
-    // Reorder the specific status group
-    tasksByStatus[status] = taskIds
-      .map((id) => state.tasks.find((t) => t.id === id))
-      .filter((t): t is Task => t !== null);
-
-    // Flatten back into a single array, sorted by status then position
-    const sortedTasks = [
-      ...tasksByStatus.todo,
-      ...tasksByStatus["in-progress"],
-      ...tasksByStatus.done,
-    ];
-
-    commit({
-      ...state,
-      tasks: sortedTasks,
-    });
-    return true;
-  }
+    version: SCHEMA_VERSION,
+    tasks,
+    templates,
+    journal: normalizeJournal(p.journal),
+    settings: normalizeSettings(p.settings),
+  });
+  return true;
+}

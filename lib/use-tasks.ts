@@ -128,6 +128,7 @@ export function useTasks() {
     saveTask: (id: string, patch: TaskPatch, options?: store.SaveOptions) =>
       store.saveTask(id, patch, options),
     deleteTask: (id: string) => store.deleteTask(id),
+    reorderTasks: (orderedIds: string[]) => store.reorderTasks(orderedIds),
     deleteSeries: (id: string) => store.deleteSeries(id),
     toggleStatus: (id: string) => store.toggleStatus(id),
     startTimer: (id: string) => store.startTimer(id),

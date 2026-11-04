@@ -17,6 +17,16 @@ interface TaskRowProps {
   today: string;
   /** The series rule this task repeats on, or null when it is a one-off. */
   recurrence: Recurrence | null;
+  /** This row is the one being dragged. */
+  dragging: boolean;
+  /** Another row is being dragged over this one. */
+  dragOver: boolean;
+  onDragStart: (task: Task) => void;
+  onDragOver: (task: Task) => void;
+  onDrop: (task: Task) => void;
+  onDragEnd: () => void;
+  /** Keyboard equivalent of dragging: -1 is up, 1 is down. */
+  onMove: (task: Task, direction: -1 | 1) => void;
   onToggle: (task: Task) => void;
   onOpen: (task: Task) => void;
   onStatusChange: (task: Task, status: Task["status"]) => void;
@@ -24,6 +34,21 @@ interface TaskRowProps {
   onStopTimer: (task: Task) => void;
   onDelete: (task: Task) => void;
   onTagClick: (tag: string) => void;
+}
+
+function GripIcon() {
+  return (
+    <svg viewBox="0 0 16 16" aria-hidden="true" className="size-3.5">
+      <g fill="currentColor">
+        <circle cx="6" cy="4" r="1.1" />
+        <circle cx="10" cy="4" r="1.1" />
+        <circle cx="6" cy="8" r="1.1" />
+        <circle cx="10" cy="8" r="1.1" />
+        <circle cx="6" cy="12" r="1.1" />
+        <circle cx="10" cy="12" r="1.1" />
+      </g>
+    </svg>
+  );
 }
 
 function TrashIcon() {
@@ -45,6 +70,13 @@ export function TaskRow({
   task,
   today,
   recurrence,
+  dragging,
+  dragOver,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onDragEnd,
+  onMove,
   onToggle,
   onOpen,
   onStatusChange,
@@ -60,11 +92,48 @@ export function TaskRow({
   return (
     <li
       data-task-id={task.id}
+      draggable
+      onDragStart={(event) => {
+        event.dataTransfer.effectAllowed = "move";
+        event.dataTransfer.setData("text/plain", task.id);
+        onDragStart(task);
+      }}
+      onDragEnd={onDragEnd}
+      onDragOver={(event) => {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "move";
+        onDragOver(task);
+      }}
+      onDrop={(event) => {
+        event.preventDefault();
+        onDrop(task);
+      }}
       className={cn(
-        "border-line bg-cream-50 shadow-soft ease-calm flex items-start gap-3 rounded-xl border p-3.5 transition-[border-color,box-shadow] duration-200",
+        "border-line bg-cream-50 shadow-soft ease-calm flex items-start gap-2.5 rounded-xl border p-3.5 transition-[border-color,box-shadow,opacity] duration-200",
         "hover:border-line-strong hover:shadow-lift",
+        dragging && "opacity-50",
+        dragOver && "border-clay-500 shadow-lift",
       )}
     >
+      <button
+        type="button"
+        data-focus="handle"
+        aria-label={`Reorder "${task.title}"`}
+        title="Drag to reorder, or focus and press the up and down arrows"
+        onKeyDown={(event) => {
+          if (event.key === "ArrowUp") {
+            event.preventDefault();
+            onMove(task, -1);
+          } else if (event.key === "ArrowDown") {
+            event.preventDefault();
+            onMove(task, 1);
+          }
+        }}
+        className="text-ink-muted/70 hover:text-ink focus-visible:outline-clay-500 -ml-1 grid size-6 shrink-0 cursor-grab place-items-center rounded-md transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 active:cursor-grabbing"
+      >
+        <GripIcon />
+      </button>
+
       <Checkbox
         hideLabel
         data-focus="checkbox"

@@ -9,6 +9,8 @@ interface JournalProps {
   today: string;
   entries: Record<string, string>;
   onChange: (date: string, text: string) => void;
+  /** Section heading; the journal page supplies its own page title. */
+  title?: string;
 }
 
 const shortDate = new Intl.DateTimeFormat(undefined, {
@@ -18,7 +20,12 @@ const shortDate = new Intl.DateTimeFormat(undefined, {
 });
 
 /** One free-form entry per day; saved when the field loses focus. */
-export function Journal({ today, entries, onChange }: JournalProps) {
+export function Journal({
+  today,
+  entries,
+  onChange,
+  title = "End-of-day journal",
+}: JournalProps) {
   const stored = entries[today] ?? "";
   const [draft, setDraft] = useState(() => ({ date: today, text: stored }));
 
@@ -39,7 +46,7 @@ export function Journal({ today, entries, onChange }: JournalProps) {
         id="journal-heading"
         className="font-display mb-3 text-xl font-medium tracking-tight"
       >
-        End-of-day journal
+        {title}
       </h2>
       <Textarea
         aria-label={`Journal for ${today}`}
