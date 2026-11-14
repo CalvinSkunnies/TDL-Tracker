@@ -6,10 +6,14 @@
  *     to /offline.html, so the app shell works offline.
  *   - other same-origin GETs (JS, CSS, fonts, images): stale-while-revalidate.
  *
- * The tracker's data lives in localStorage, which the service worker does not
- * touch, so tasks persist independently of the cache.
+ *   - /tdl/api/* is never cached: it is the live remote-save endpoint, and
+ *     serving a stale copy would show an old list as if it were current.
+ *
+ * The tracker's data lives in localStorage (offline cache) and in Upstash Redis
+ * (remote save). The service worker never touches localStorage, so tasks
+ * persist independently of the cache.
  */
-const CACHE = "tdl-tracker-v1";
+const CACHE = "tdl-tracker-v2";
 const OFFLINE_URL = "/offline.html";
 
 self.addEventListener("install", (event) => {
@@ -38,6 +42,9 @@ self.addEventListener("fetch", (event) => {
 
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
+
+  // Remote-save traffic: always go to the network, never the cache.
+  if (url.pathname.startsWith("/tdl/api/")) return;
 
   if (request.mode === "navigate") {
     event.respondWith(

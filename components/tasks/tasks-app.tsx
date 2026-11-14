@@ -7,6 +7,7 @@ import type { SaveOptions } from "@/lib/store";
 import { useTasks } from "@/lib/use-tasks";
 import { useToday } from "@/lib/use-today";
 import type { NewTask, Task, TaskPatch, TaskStatus } from "@/lib/types";
+import { KineticTextReveal } from "@/components/ui/kinetic-text-reveal";
 import { AddTaskDialog } from "./add-task-dialog";
 import { CommandPalette } from "./command-palette";
 import { DataControls } from "./data-controls";
@@ -30,6 +31,15 @@ const STORAGE_MESSAGES = {
   "save-failed":
     "The latest change couldn't be saved (storage may be full). It's visible now but may be lost.",
 } as const;
+
+const SYNC_MESSAGES: Record<string, string> = {
+  loading: "Loading your saved list…",
+  syncing: "Saving…",
+  synced: "Saved remotely — synced across your devices.",
+  offline:
+    "Offline — saved in this browser, will sync when you're back online.",
+  error: "Remote save failed — saved in this browser only.",
+};
 
 function isTypingTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
@@ -56,6 +66,8 @@ export function TasksApp() {
     settings,
     isLoading,
     storageProblem,
+    syncStatus,
+    remoteReplacedLocal,
     addTask,
     saveTask,
     deleteTask,
@@ -314,8 +326,18 @@ export function TasksApp() {
     <div className="mx-auto max-w-2xl">
       <header className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>
+          <p className="text-ink-muted mb-3 text-[11px] font-semibold tracking-[0.22em] uppercase">
+            Notepad · Tracker
+          </p>
           <h1 className="font-display text-4xl font-medium tracking-tight sm:text-5xl">
-            Your tasks
+            <KineticTextReveal
+              text="Your tasks"
+              splitBy="words"
+              direction="up"
+              distance={16}
+              stagger={0.08}
+              blur
+            />
           </h1>
           <p className="text-ink-muted mt-2 text-base" aria-live="off">
             {isLoading
@@ -345,6 +367,14 @@ export function TasksApp() {
           className="border-danger/40 bg-cream-50 text-danger mb-6 rounded-xl border px-4 py-3 text-sm"
         >
           {STORAGE_MESSAGES[storageProblem]}
+        </p>
+      )}
+
+      {!isLoading && (
+        <p role="status" className="text-ink-muted mb-6 text-xs">
+          {SYNC_MESSAGES[syncStatus]}
+          {remoteReplacedLocal &&
+            " Loaded your list from remote save — the copy that was in this browser is kept as a backup in this browser."}
         </p>
       )}
 

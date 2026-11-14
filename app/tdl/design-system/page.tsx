@@ -20,41 +20,41 @@ const swatches = [
   {
     name: "cream-100",
     hex: "#F7F5F2",
-    dark: "#1A1814",
+    dark: "#07080D",
     className: "bg-cream-100",
   },
   {
     name: "cream-50",
     hex: "#FAF9F5",
-    dark: "#232019",
+    dark: "#0C0F16",
     className: "bg-cream-50",
   },
   {
     name: "cream-200",
     hex: "#EFEBE4",
-    dark: "#2D2A23",
+    dark: "#141824",
     className: "bg-cream-200",
   },
-  { name: "line", hex: "#E5E0D8", dark: "#38342C", className: "bg-line" },
+  { name: "line", hex: "#E5E0D8", dark: "#1C2230", className: "bg-line" },
   {
     name: "clay-500",
     hex: "#D97757",
-    dark: "#D97757",
+    dark: "#A78BFA",
     className: "bg-clay-500",
   },
   {
     name: "clay-700",
     hex: "#9d4325",
-    dark: "#F2A98D",
+    dark: "#DDD3FF",
     className: "bg-clay-700",
   },
   {
     name: "ink-muted",
     hex: "#6B665E",
-    dark: "#A59E91",
+    dark: "#8B94A7",
     className: "bg-ink-muted",
   },
-  { name: "ink", hex: "#1A1A1A", dark: "#F3EFE8", className: "bg-ink" },
+  { name: "ink", hex: "#1A1A1A", dark: "#F2F5FA", className: "bg-ink" },
 ];
 
 function Section({
@@ -94,7 +94,7 @@ export default function DesignSystemPage() {
 
       <Section
         title="Color"
-        description="Warm neutrals for surfaces, one clay accent for the things that matter. Each swatch shows light / dark; use the toggle in the nav to switch."
+        description="Warm neutrals and a clay accent in light; deep space tones and a violet accent in dark. Each swatch shows light / dark; use the toggle in the nav to switch."
       >
         <ul className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {swatches.map((s) => (
@@ -113,7 +113,7 @@ export default function DesignSystemPage() {
 
       <Section
         title="Type"
-        description="Fraunces for headings, Inter for everything you read or click."
+        description="Fraunces for headings in light, Inter for everything you read or click. In dark mode the display face switches to Inter too, for a sharper, futuristic read."
       >
         <div className="flex flex-col gap-3">
           <p className="font-display text-5xl font-medium tracking-tight">

@@ -6,6 +6,12 @@ coverage
 package-lock.json
 next-env.d.ts
 
+# Vendored Componentry files — kept byte-identical to the registry
+# (apart from the attribution header), so prettier must not reformat them.
+components/ui/aurora-flow.tsx
+components/ui/kinetic-text-reveal.tsx
+components/ui/webgl-error-boundary.tsx
+
 # Non-project files that live in this home directory
 .cache
 .config

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
+import { AuroraBackground } from "@/components/layout/aurora-background";
 import { SiteNav } from "@/components/layout/site-nav";
 import { ServiceWorkerRegister } from "@/components/pwa/service-worker-register";
 import "./globals.css";
@@ -27,15 +28,17 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#d97757",
+  themeColor: "#04050a",
   colorScheme: "light dark",
 };
 
 /**
- * Runs before first paint: saved choice wins, otherwise the OS setting.
+ * Runs before first paint: saved choice wins, otherwise dark.
+ * Dark is the default now (futuristic dark theme); the toggle in the
+ * nav still switches back to light and remembers the choice.
  * Sets data-theme on <html> so there is no flash of the wrong theme.
  */
-const THEME_SCRIPT = `(function(){try{var t=localStorage.getItem("theme");if(t!=="light"&&t!=="dark"){t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}document.documentElement.dataset.theme=t}catch(e){}})()`;
+const THEME_SCRIPT = `(function(){try{var t=localStorage.getItem("theme");if(t!=="light"&&t!=="dark"){t="dark"}document.documentElement.dataset.theme=t}catch(e){}})()`;
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
@@ -48,6 +51,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </head>
       <body className="flex min-h-full flex-col">
+        <AuroraBackground />
         <SiteNav />
         <main className="mx-auto w-full max-w-4xl flex-1 px-5 py-12 sm:px-8 sm:py-16">
           {children}

@@ -16,6 +16,7 @@ import {
   matchesQuery,
 } from "./tasks";
 import { useToday } from "./use-today";
+import { startRemoteSync, type SyncStatus } from "./remote-sync";
 import {
   TASK_STATUSES,
   type NewTask,
@@ -45,6 +46,9 @@ export function useTasks() {
   const today = useToday();
   const [filters, setFilters] = useState<TaskFilters>(DEFAULT_FILTERS);
 
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>("loading");
+  const [remoteReplacedLocal, setRemoteReplacedLocal] = useState(false);
+
   const isLoading = snapshot === null;
   const tasks = snapshot?.tasks ?? NO_TASKS;
   const templates = snapshot?.templates ?? NO_TEMPLATES;
@@ -68,6 +72,18 @@ export function useTasks() {
     if (isLoading) return;
     store.generateToday();
   }, [isLoading, today]);
+
+  // Remote sync (Upstash Redis): pulls the saved list once, then pushes edits.
+  // Runs only after local data has loaded, so the first sync can compare
+  // the browser copy against the remote copy instead of overwriting it.
+  useEffect(() => {
+    if (isLoading) return;
+
+    return startRemoteSync({
+      onStatus: setSyncStatus,
+      onRemoteReplacedLocal: () => setRemoteReplacedLocal(true),
+    });
+  }, [isLoading]);
 
   const allTags = useMemo(() => collectTags(tasks), [tasks]);
 
@@ -123,6 +139,10 @@ export function useTasks() {
     isLoading,
     /** Set when localStorage is unavailable, unreadable or full. */
     storageProblem: snapshot?.problem ?? null,
+    /** Remote save state: loading | synced | syncing | offline | error. */
+    syncStatus,
+    /** True when a remote list replaced the copy in this browser on load. */
+    remoteReplacedLocal,
 
     addTask: (input: NewTask) => store.addTask(input),
     saveTask: (id: string, patch: TaskPatch, options?: store.SaveOptions) =>

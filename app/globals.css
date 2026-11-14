@@ -92,42 +92,62 @@
 }
 
 /*
- * Dark theme: warm charcoal, not blue-black. The same token names are
+ * Dark theme: deep space, not warm charcoal. The same token names are
  * remapped, so every component adapts without per-component dark: classes.
  * Token names describe role (cream-50 = card surface), not literal color.
+ * The clay accent becomes violet in dark mode; the display face switches
+ * from Fraunces to Inter for a sharper, futuristic read. Light mode is
+ * untouched — warm cream, clay accent, Fraunces headings.
  */
 :root[data-theme="dark"] {
   color-scheme: dark;
 
-  --color-cream-50: #232019;
-  --color-cream-100: #1a1814;
-  --color-cream-200: #2d2a23;
-  --color-cream-300: #38342c;
+  --color-cream-50: #0c0f16;
+  --color-cream-100: #07080d;
+  --color-cream-200: #141824;
+  --color-cream-300: #1e2433;
 
-  --color-ink: #f3efe8;
-  --color-ink-soft: #d6d0c4;
-  --color-ink-muted: #a59e91;
+  --color-ink: #f2f5fa;
+  --color-ink-soft: #c9d1de;
+  --color-ink-muted: #8b94a7;
 
-  --color-line: #38342c;
-  --color-line-strong: #4d483e;
+  --color-line: #1c2230;
+  --color-line-strong: #2c3548;
 
-  --color-clay-50: #2b1c14;
-  --color-clay-100: #3d2519;
-  --color-clay-400: #e58f72;
-  --color-clay-500: #d97757;
-  --color-clay-600: #e48a6a;
-  --color-clay-700: #f2a98d;
+  --color-clay-50: #171226;
+  --color-clay-100: #221a38;
+  --color-clay-400: #b7a6ff;
+  --color-clay-500: #a78bfa;
+  --color-clay-600: #c4b5fd;
+  --color-clay-700: #ddd3ff;
 
-  --color-raised: #2d2a23;
-  --color-backdrop: rgb(0 0 0 / 0.6);
+  --color-raised: #121724;
+  --color-backdrop: rgb(0 0 0 / 0.65);
 
-  --color-danger: #f08c76;
-  --color-success: #92c487;
+  --color-danger: #ff9a8a;
+  --color-success: #7ee2a8;
 
-  --shadow-soft: 0 1px 2px rgb(0 0 0 / 0.3), 0 1px 1px rgb(0 0 0 / 0.2);
-  --shadow-lift: 0 6px 18px -2px rgb(0 0 0 / 0.45), 0 2px 4px rgb(0 0 0 / 0.25);
+  --font-display: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  --shadow-soft: 0 1px 2px rgb(0 0 0 / 0.35), 0 1px 1px rgb(0 0 0 / 0.25);
+  --shadow-lift:
+    0 8px 28px -8px rgb(139 124 246 / 0.22), 0 2px 6px rgb(0 0 0 / 0.4);
   --shadow-overlay:
-    0 24px 60px -12px rgb(0 0 0 / 0.7), 0 8px 20px -8px rgb(0 0 0 / 0.4);
+    0 24px 60px -12px rgb(0 0 0 / 0.75), 0 8px 20px -8px rgb(0 0 0 / 0.45);
+}
+
+/*
+ * The Aurora Flow background (components/layout/aurora-background.tsx)
+ * is fixed behind the page in dark mode. <html> carries the solid dark
+ * base; <body> goes transparent so the aurora shows through. In light
+ * mode the body keeps its cream background as before.
+ */
+html[data-theme="dark"] {
+  background: #04050a;
+}
+
+:root[data-theme="dark"] body {
+  background: transparent;
 }
 
 body {
